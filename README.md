@@ -1,3 +1,6 @@
+This is a fork of PhysiCell from https://github.com/MathCancer/PhysiCell/
+The code uses v1.10 of PhysiCell
+
 # follicle_updated
 - Pleae see wiki for current status and detailed overview (pending)
 - Repo will eventually contain all the current code for the ovarian follicle project.
