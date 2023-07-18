@@ -566,8 +566,8 @@ void two_parameter_single_step(Cell* pCell, Phenotype &phenotype, double dt) // 
   //     
   //    // std::cout<<"interior_component_molality 0: "<< SPcell->interior_component_molality[0]<<"\n";   
   //    // std::cout<<"interior_component_molality 1: "<< SPcell->interior_component_molality[1]<<"\n";   
-     double vir=ternary_virial(SPcell->interior_component_molality[0],SPcell->interior_component_molality[1],"NaCl","EG"); 
-     std::cout<<"Interior OSMOLALITY: "<< vir<<"\n";   
+     // double vir=ternary_virial(SPcell->interior_component_molality[0],SPcell->interior_component_molality[1],"NaCl","EG"); 
+     // std::cout<<"Interior OSMOLALITY: "<< vir<<"\n";   
       SPcell->interior_osmolality=ternary_virial(SPcell->interior_component_molality[0],SPcell->interior_component_molality[1],"NaCl","EG");
 //SPcell->interior_component_molality[0]*1.68+SPcell->interior_component_molality[1];  
   }
@@ -638,16 +638,16 @@ void uptake_in_one_voxel(int voxel, double water_uptake_per_voxel, std::vector<d
   // std::cout<<"new water volume: "<< new_water_volume<<"\n";
   for(int i=0; i<solute_uptake_per_voxel.size();i++)
   {
-    std::cout<<"old old: "<<microenvironment.density_vector(voxel)[i]<<"\n";
-    std::cout<<"old: "<<temp_density_vec[i]<<"\n";
+    // std::cout<<"old old: "<<microenvironment.density_vector(voxel)[i]<<"\n";
+    // std::cout<<"old: "<<temp_density_vec[i]<<"\n";
     microenvironment.density_vector(voxel)[i]=new_moles[i]/new_water_volume;
-    std::cout<<"new: "<<microenvironment.density_vector(voxel)[i]<<"\n";
+    // std::cout<<"new: "<<microenvironment.density_vector(voxel)[i]<<"\n";
   }
   return;
 }
 void rasterize_my_uptake(Cell* pCell, double solute_index)//old version
 {
-  std::cout<<"UPTAKING"<<"\n";
+  std::cout<<"WARNING OLD VERSION OF UPTAKING"<<"\n";
   double total_voxel_volume=0.0;
   double uptake_per_voxel=0.0;
   //test double
@@ -1084,7 +1084,7 @@ void update_concentrations(Spring_Cell* SPcell)
     // std::cout<<"Test molal: "<< molarity_to_molality((SPcell->exterior_molarity[1]),"EG")<<"\n";
     SPcell->exterior_component_molality[1]=molarity_to_molality(SPcell->exterior_molarity[1],"EG");
     
-   std::cout<<"Test virial: "<< ternary_virial(SPcell->exterior_component_molality[0],SPcell->exterior_component_molality[1],"NaCl","EG")<<"\n";
+   // std::cout<<"Test virial: "<< ternary_virial(SPcell->exterior_component_molality[0],SPcell->exterior_component_molality[1],"NaCl","EG")<<"\n";
     SPcell->exterior_osmolality=ternary_virial(SPcell->exterior_component_molality[0],SPcell->exterior_component_molality[1],"NaCl","EG");
 // SPcell->exterior_component_molality[0]*1.68+SPcell->exterior_component_molality[1];//ternary_virial(SPcell->exterior_component_molality[0],SPcell->exterior_component_molality[1],"NaCl","EG");
   }
@@ -1366,4 +1366,77 @@ double moles_in_voxel(int voxel_id, std::string solute_name)
   
 
   return moles;
+}
+void output_all_voxels_as_cartesian_index()
+{
+  for(int i=0; i<microenvironment.number_of_voxels(); i++)
+  {
+    std::vector <unsigned int> output_indicies=microenvironment.cartesian_indices(i);
+    std::ofstream ofs;
+    ofs.open ("./output/voxel_indicies.csv", std::ofstream::out | std::ofstream::app);
+    ofs <<i<<", "<<output_indicies[0]<<", "<<output_indicies[1]<<", "<<output_indicies[2]<<"\n";
+    ofs.close();
+  }
+    return;
+}
+void output_cell_and_voxels(std::vector <int> voxel_list, Cell* pCell)
+{
+  #pragma omp critical
+  {
+  std::vector <std::vector <std::vector<bool>>> matplotlib_values;
+  matplotlib_values.resize(40,std::vector<std::vector<bool> >(40,std::vector<bool>(40)));
+  // matplotlib_values.resize(40,std::vector<bool> (40));
+  for(int i=0; i<40; i++)//x
+  {
+    for(int j=0; j<40; j++)//y
+    {
+      for(int k=0; k<40; k++)
+      {
+        matplotlib_values[i][j].push_back(false);
+      }
+    }
+  }
+  std::ofstream ofs;
+  ofs.open ("./output/pcell_and_indicies.csv", std::ofstream::out | std::ofstream::app);
+  ofs <<pCell<<", "<<pCell->phenotype.geometry.radius<<", "<<pCell->position<<"\n"<<"\n";
+  ofs.close();
+  for(int i=0; i<40; i++)//x
+  {
+    for(int j=0; j<40; j++)//y
+    {
+      for(int k=0; k<40;k++)//z
+      {
+        for(int m=0; m<voxel_list.size();m++)
+        {
+
+          if(microenvironment.voxel_index(i,j,k)==voxel_list[m])
+          {
+              matplotlib_values[i][j][k]=true;
+          }
+        }
+      }
+    }
+  }
+
+  ofs.open ("./output/pcell_and_indicies.csv", std::ofstream::out | std::ofstream::app);
+
+  ofs<<"vox_array=np.array([";
+  for(int i=0; i<40; i++)//x
+  {
+    ofs<<"[";
+    for(int j=0; j<40; j++)//y
+    {
+      ofs<<"[";
+      for(int k=0; k<40;k++)//z
+      {
+          ofs<<matplotlib_values[i][j][k]<<", ";
+      }
+      ofs<<"],";
+    }
+    ofs<<"],";
+  }
+  ofs<<"])";
+  ofs.close();
+  }
+  return;
 }

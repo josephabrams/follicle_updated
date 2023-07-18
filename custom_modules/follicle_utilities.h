@@ -76,5 +76,6 @@ std::vector <int> spherical_bounding_box(std::vector <double> center_point, doub
 void print_voxels_for_quick_plotting(Cell* pCell,std::vector <int> bounding_voxels, std::vector <int> sub_section);
 void custom_add_potentials_for_pCells(Cell* pCell);
 void internal_concentration(Cell* pCell, std::string solute_name);
-
+void output_all_voxels_as_cartesian_index();
+void output_cell_and_voxels(std::vector <int> voxel_list, Cell* pCell);
 #endif // __FOLLICLE_UTILITIES_H__

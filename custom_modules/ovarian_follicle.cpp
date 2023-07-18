@@ -183,7 +183,7 @@ void create_oocyte_cell_type(void)
 	int cycle_start_index = live.find_phase_index( PhysiCell_constants::live );
 	int cycle_end_index = live.find_phase_index( PhysiCell_constants::live );
 	oocyte_cell.phenotype.cycle.data.transition_rate(cycle_start_index,cycle_end_index) = 0.0;
-    int apoptosis_index = cell_defaults.phenotype.death.find_death_model_index( PhysiCell_constants::apoptosis_death_model );
+  int apoptosis_index = cell_defaults.phenotype.death.find_death_model_index( PhysiCell_constants::apoptosis_death_model );
 
 	//
 	oocyte_cell.phenotype.secretion.uptake_rates[0] *=0;
@@ -196,15 +196,15 @@ void create_oocyte_cell_type(void)
 	// set functions
 	oocyte_cell.functions.update_phenotype = oocyte_phenotype_rule;
 	oocyte_cell.functions.custom_cell_rule = oocyte_cell_rule;
-
 	oocyte_cell.functions.update_velocity = oocyte_velocity_rule;
 
 	// set custom data values
 	oocyte_cell.custom_data.add_variable("basement_k","unitless",1.0);//oocyte spring constant
 	oocyte_cell.custom_data.add_variable("cell_k","unitless",-1.0);//oocyte spring constant
    	oocyte_cell.custom_data.add_variable("neighborhood_radius","um",-1.0);//radius beyond cell surface where connections occur
-	oocyte_cell.custom_data[ "initial_volume" ] = 817283;//um^3
-	oocyte_cell.custom_data["Lp"]=-1.0;//Lp_oocyte;  //0.0166666666;//0.0135;////um/atm/sec //EG 1/60=.016666667;https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4141568/;
+	oocyte_cell.custom_data[ "initial_volume" ] = parameters.doubles("oocyte_isotonic_volume");//817283 um^3
+// Lp and Ps are reset to the correct values when encapsulated in spring_cell class
+  oocyte_cell.custom_data["Lp"]=-1.0;// //0.0166666666;//0.0135;////um/atm/sec //EG 1/60=.016666667;https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4141568/;
 	oocyte_cell.custom_data["Ps"]=-1.0;//Ps_oocyte; //0.0; //.12;//0.0;um/sec
 
 	/*
@@ -412,22 +412,18 @@ void create_granulosa_cell_type( void )
 	granulosa_cell.custom_data.add_variable("basement_k","unitless",100.0);
 
     granulosa_cell.custom_data.add_variable("neighborhood_radius","unitless",-1.0);//radius beyond cell surface where connections occur
-	granulosa_cell.custom_data[ "initial_volume" ] = 523.6;
-	granulosa_cell.custom_data["Lp"]=0;
-	granulosa_cell.custom_data["Ps"]=0;
+	granulosa_cell.custom_data[ "initial_volume" ] = parameters.doubles("gran_isotonic_volume");//523.6;
+	granulosa_cell.custom_data["Lp"]=-1;
+	granulosa_cell.custom_data["Ps"]=-1;
 	granulosa_cell.custom_data.add_variable("connection_length","micometers",0.5);
 
 	granulosa_cell.custom_data["surface_area"]= 314.159;//parameters.doubles("granulosa_Area");
-	granulosa_cell.custom_data["R"]= R;//parameters.doubles("granulosa_R");
-	granulosa_cell.custom_data["Temperature"]=-1.0; //parameters.doubles("granulosa_Temperature");
-	granulosa_cell.custom_data["isosmotic_water_volume"]=523.6;//parameters.doubles("isosmotic_granulosa_volume");
+	granulosa_cell.custom_data["R"]= parameters.doubles("gas_constant");//R;//parameters.doubles("granulosa_R");
+	granulosa_cell.custom_data["Temperature"]=parameters.doubles("temperature");//parameters.doubles("granulosa_Temperature");
+	// granulosa_cell.custom_data["isosmotic_water_volume"]//parameters.doubles("isosmotic_granulosa_volume");
 	//granulosa_cell.custom_data["Partial_molar_volume"]=0.0557414;//parameters.doubles("EG_partial_molar_volume");
 	granulosa_cell.custom_data["Vb_fraction"]=.2;
 	granulosa_cell.custom_data.add_variable("cell_k","unitless",-1.0);
-
-
-
-
 
 	//	granulosa_cell.custom_data.add_variable("Water_volume", "unitless", 418.88);
 
