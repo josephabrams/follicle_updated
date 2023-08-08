@@ -622,7 +622,9 @@ default_microenvironment_options.use_oxygen_as_first_field = false;
 }
 void setup_secondary_stage_follicle(void)
 {
-    /*
+  double follicle_radius=130;
+  double initial_granulosa_radius=5;
+  double initial_oocyte_radius=58;
 
 		double initial_overlap=.1;//representation of the initial packing density from config eventually
 		double cell_spacing = initial_granulosa_radius-initial_overlap;//slight overlap to represent cells up against each other better variable name
@@ -649,7 +651,6 @@ void setup_secondary_stage_follicle(void)
 			pCell_granulosa->set_total_volume(pCell_granulosa->custom_data["initial_volume"]);
 		}
 	return;
-    */
 }
 
 void setup_n_layer_follicle(int n_layers)
@@ -836,10 +837,10 @@ void setup_tissue( void )
 	//set_concentrations( 0.2534, 3 );//set external concetratioin of HM to 0.255 
 	//colored_cell_list.resize(0);
 	//select tissue to set up:
-	//setup_secondary_stage_follicle();
+	setup_secondary_stage_follicle();
 	//setup_wedge();
 	//setup_toy_granulosa_model();
-	setup_just_oocyte();
+	// setup_just_oocyte();
 	// setup_4_granulosa_test_case();
 	initialize_spring_cells();
 	//setup_n_layer_follicle(7);

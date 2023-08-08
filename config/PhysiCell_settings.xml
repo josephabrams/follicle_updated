@@ -63,7 +63,7 @@
 			</dirichlet_nodes>
 		</options>
 	</microenvironment_setup>	
-	
+	<!-- cancer cell from sameple project biorobots was left as the default cell type but is not used in the follicle simulation except to initialize the base cell class -->
 	<cell_definitions>
 		<cell_definition name="default_cell" ID="0">
         <phenotype>
@@ -206,35 +206,46 @@
 
 <user_parameters>
   <random_seed type="int" units="dimensionless" description="">0</random_seed>
+<!-- selected simulation allows simulations to be switched between EG, GLY, PBS and EG with GLY, using 1,2,3 and 4 respectively-->
   <selected_simulation type="int" units="dimensionless" description="">1</selected_simulation>
+<!-- selected_PBS_concentration allows PBS simulations to be switched between 0.5xPBS, 1xPBS, 2xPBS and 5xPBS using 0,1,2 and 5 respectively-->
   <selected_PBS_concentration type="int" units="xPBS" description="">1</selected_PBS_concentration>
       <temperature type="double" units="degrees" description="">293.15</temperature>
       <gas_constant type="double" units="10^-3 J/mole*k" description="">0.08205</gas_constant>
-      <oocyte_radius type="double" units="micron" description="">58</oocyte_radius>
-      <oocyte_Lp_EG type="double" units="um/sec" description="Karlsson et al">0.016667</oocyte_Lp_EG>
-      <oocyte_Lp_GLY type="double" units="um/sec" description="">0.0053</oocyte_Lp_GLY>
-      <oocyte_Lp_PBS type="double" units="um/sec" description="">0.0135</oocyte_Lp_PBS>
-      <gran_Lp_EG type="double" units="um/sec" description="Karlsson et al">0.00288776</gran_Lp_EG>
-      <gran_Lp_GLY type="double" units="um/sec" description="">0.00288776</gran_Lp_GLY>
-      <gran_Lp_PBS type="double" units="um/sec" description="">0.0114035</gran_Lp_PBS>
+<!-- volume and surface area are derived from radius of sphere-->
+      <oocyte_radius type="double" units="micron" description="from karlsson et al 2009">58</oocyte_radius>
+      <oocyte_isotonic_surface_area type="double" units="um^3" description="from karlsson et al 2009">42273.3</oocyte_isotonic_surface_area>
+      <oocyte_isotonic_volume type="double" units="um^3" description="from karlsson et al 2009">817283</oocyte_isotonic_volume>
+      <oocyte_non_osmotic_fraction type="double" units="dimensionless" description="from karlsson et al 2009">0.288</oocyte_non_osmotic_fraction>
+      <gran_radius type="double" units="micron" description="from karlsson et al 2009">5</gran_radius>
+      <gran_isotonic_surface_area type="double" units="um^3" description="from karlsson et al 2009">314.159</gran_isotonic_surface_area>
+      <gran_isotonic_volume type="double" units="um^3" description="from karlsson et al 2009">523.599</gran_isotonic_volume>
+      <gran_non_osmotic_fraction type="double" units="dimensionless" description="from karlsson et al 2009">0.2</gran_non_osmotic_fraction>
+      <oocyte_Lp_EG type="double" units="um/sec/atm" description="Karlsson et al">0.016667</oocyte_Lp_EG>
+      <oocyte_Lp_GLY type="double" units="um/sec/atm" description="">0.0053</oocyte_Lp_GLY>
+      <oocyte_Lp_PBS type="double" units="um/sec/atm" description="">0.0135</oocyte_Lp_PBS>
+      <gran_Lp_EG type="double" units="um/sec/atm" description="Karlsson et al">0.00288776</gran_Lp_EG>
+      <gran_Lp_GLY type="double" units="um/sec/atm" description="">0.00288776</gran_Lp_GLY>
+      <gran_Lp_PBS type="double" units="um/sec/atm" description="">0.0114035</gran_Lp_PBS>
       <oocyte_Ps_EG type="double" units="um/sec" description="Karlsson et al">0.12</oocyte_Ps_EG>
       <oocyte_Ps_GLY type="double" units="um/sec" description="">0.107</oocyte_Ps_GLY>
       <oocyte_Ps_NaCl type="double" units="um/sec" description="">0.0</oocyte_Ps_NaCl>
       <gran_Ps_EG type="double" units="um/sec" description="">0.0345</gran_Ps_EG>
-      <gran_Ps_GLY type="double" units="" description="">0.0345</gran_Ps_GLY>
-      <gran_Ps_NaCl type="double" units="" description="">0.0</gran_Ps_NaCl>
-      <oocyte_Lp_EG_and_GLY type="double" units="" description="">0.15</oocyte_Lp_EG_and_GLY>
-      <gran_Lp_EG_and_GLY type="double" units="" description="">0.0345</gran_Lp_EG_and_GLY>
+      <gran_Ps_GLY type="double" units="" description="um/sec">0.0345</gran_Ps_GLY>
+      <gran_Ps_NaCl type="double" units="" description="um/sec">0.0</gran_Ps_NaCl>
+      <oocyte_Lp_EG_and_GLY type="double" units="um/sec/atm" description="">0.15</oocyte_Lp_EG_and_GLY>
+      <gran_Lp_EG_and_GLY type="double" units="um/sec/atm" description="">0.0345</gran_Lp_EG_and_GLY>
       <follicle_radius type="double" units="micron" description="">130</follicle_radius>
-      <initial_EG_only_molarity type="double" units="fmol/um^3" description="">1.23</initial_EG_only_molarity>
-      <initial_GLY_only_molarity type="double" units="fmol/um^3" description="">1.23</initial_GLY_only_molarity>
-      <initial_EG_mixed_molarity type="double" units="fmol/um^3" description="">1.23</initial_EG_mixed_molarity>
-      <initial_GLY_mixed_molarity type="double" units="fmol/um^3" description="">1.23</initial_GLY_mixed_molarity>
-      <initial_HM_molarity type="double" units="fmol/um^3" description="">1.23</initial_HM_molarity>
-      <initial_1xPBS_molarity type="double" units="fmol/um^3" description="">1.23</initial_1xPBS_molarity>
-      <initial_2xPBS_molarity type="double" units="fmol/um^3" description="">1.23</initial_2xPBS_molarity>
-      <initial_5xPBS_molarity type="double" units="fmol/um^3" description="">1.23</initial_5xPBS_molarity>
-      <initial_05xPBS_molarity type="double" units="fmol/um^3" description="">1.23</initial_05xPBS_molarity>
+      <initial_EG_only_molarity type="double" units="fmol/um^3" description="">1.819</initial_EG_only_molarity>
+      <initial_GLY_only_molarity type="double" units="fmol/um^3" description="">1.611</initial_GLY_only_molarity>
+      <initial_EG_mixed_molarity type="double" units="fmol/um^3" description="">1.756</initial_EG_mixed_molarity>
+      <initial_GLY_mixed_molarity type="double" units="fmol/um^3" description="">1.611</initial_GLY_mixed_molarity>
+      <initial_HM_molarity type="double" units="fmol/um^3" description="">0.151</initial_HM_molarity>
+      <!-- initial PBS molarities are less the HM molarity since both are treated as NaCl -->
+      <initial_1xPBS_molarity type="double" units="fmol/um^3" description="">0.111</initial_1xPBS_molarity>
+      <initial_2xPBS_molarity type="double" units="fmol/um^3" description="">0.191</initial_2xPBS_molarity>
+      <initial_5xPBS_molarity type="double" units="fmol/um^3" description="">0.376</initial_5xPBS_molarity>
+      <initial_05xPBS_molarity type="double" units="fmol/um^3" description="">0.911</initial_05xPBS_molarity>
     </user_parameters>
   <options>
       <!-- other options -->

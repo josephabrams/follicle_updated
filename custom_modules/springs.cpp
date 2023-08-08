@@ -83,7 +83,7 @@ Spring_Cell::Spring_Cell(Cell* pCell)//(Cell* pCell,Phenotype& phenotype)
   surface_area=pCell->custom_data["surface_area"];
   next_water_volume=0.0;//for ABM 2nd order
   solid_volume=pCell->custom_data["initial_volume"]*pCell->custom_data["Vb_fraction"];
-  solute_volume=1449.82;
+  solute_volume=pCell->custom_data["initial_solute_volume"];//1449.82;
   water_volume=pCell->custom_data["initial_volume"]-solid_volume-solute_volume;
   use_virial=true;//ternary use, quatenary dont
   dVw=0.0;//cell water flux
