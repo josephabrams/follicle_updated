@@ -105,6 +105,7 @@ Spring_Cell::Spring_Cell(Cell* pCell)//(Cell* pCell,Phenotype& phenotype)
   solute_volume=0.0;
   index=0;
   water_uptake=0.0;
+  toxicity=0.0;
  return;
 }
 //     Cryo_State_Variables(int solute_num);

@@ -22,13 +22,14 @@ void initialize_neighboring_spring_connections();
 void attach_neighboring_springs(Cell *pCell, double max_spring_length); 
 std::vector<double> displacement_between_membranes(Cell* pCell_1, Cell* pCell_2);
 double distance_between_membranes(Cell* pCell_1, Cell* pCell_2);
-void non_connected_neighbor_pressure(Cell* pCell, double dt);
+void non_connected_neighbor_pressure(Cell* pCell, double dt, double spring_constant);
 void two_parameter_single_step(Cell* pCell,Phenotype& phenotype,double dt);//calculates current volume based on previous volume and parameters
 std::vector<int> get_intersecting_voxels(Cell* pCell);
 std::vector<int> get_exterior_voxels(Cell * pCell);
 std::vector<int> get_interior_voxels(Cell * pCell);
 double concentration_at_boundary(Cell * pCell, int solute_index);
 
+void update_all_forces(Cell* pCell, double dt, double spring_constant);
 void uptake_in_one_voxel(int voxel, double water_uptake_per_voxel, std::vector<double> solute_uptake_per_voxel, std::vector<double> specific_volumes );
 double molarity_to_molality(double molarity, std::string component_name);
 std::vector<std::vector<double> >get_voxel_corners (std::vector<double> voxel_center);

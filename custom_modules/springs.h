@@ -97,6 +97,7 @@ public:
   std::vector<double> exterior_component_molality;
   std::vector<double> Ps;
   double Lp;
+  double toxicity;
   std::vector <double> solute_uptake;
   double water_uptake;
   std::vector <int> uptake_voxels;

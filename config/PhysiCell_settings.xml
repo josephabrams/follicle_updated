@@ -209,7 +209,7 @@
 <!-- selected simulation allows simulations to be switched between EG, GLY, PBS and EG with GLY, using 1,2,3 and 4 respectively-->
   <selected_simulation type="int" units="dimensionless" description="">1</selected_simulation>
 <!-- selected_PBS_concentration allows PBS simulations to be switched between 0.5xPBS, 1xPBS, 2xPBS and 5xPBS using 0,1,2 and 5 respectively-->
-  <selected_PBS_concentration type="int" units="xPBS" description="">1</selected_PBS_concentration>
+  <selected_PBS_simulation type="int" units="xPBS" description="">1</selected_PBS_simulation>
       <temperature type="double" units="degrees" description="">293.15</temperature>
       <gas_constant type="double" units="10^-3 J/mole*k" description="">0.08205</gas_constant>
 <!-- volume and surface area are derived from radius of sphere-->
@@ -246,6 +246,8 @@
       <initial_2xPBS_molarity type="double" units="fmol/um^3" description="">0.376</initial_2xPBS_molarity>
       <initial_5xPBS_molarity type="double" units="fmol/um^3" description="">0.911</initial_5xPBS_molarity>
       <initial_05xPBS_molarity type="double" units="fmol/um^3" description="">0.111</initial_05xPBS_molarity>
+      <initial_EG_Karlsson_molarity type="double" units="fmol/um^3" description="">1.0</initial_EG_Karlsson_molarity>
+      
     </user_parameters>
   <options>
       <!-- other options -->

@@ -520,7 +520,7 @@ default_microenvironment_options.use_oxygen_as_first_field = false;
 	// add the immunostimulatory factor
 	// let's do these in XML later
   static int simulation_selected =parameters.ints( "selected_simulation" ); 
-  static int selected_PBS_simulation =parameters.ints("selected_PBS_simulation");	
+  static int selected_PBS_simulation =parameters.ints("selected_PBS_simulation");
   microenvironment.add_density( "HM", "dimensionless" );
 	microenvironment.diffusion_coefficients[0] = 510;
 	microenvironment.decay_rates[0] = 0;
@@ -540,7 +540,7 @@ default_microenvironment_options.use_oxygen_as_first_field = false;
     default_microenvironment_options.Dirichlet_condition_vector[0] = parameters.doubles("initial_HM_molarity");
     default_microenvironment_options.Dirichlet_activation_vector[0]=true;	
     default_microenvironment_options.initial_condition_vector[1]=0.00;
-    default_microenvironment_options.Dirichlet_condition_vector[1] = parameters.doubles("internal_EG_concentration");//1.00;//6.66;
+    default_microenvironment_options.Dirichlet_condition_vector[1] = parameters.doubles("initial_EG_only_molarity");//1.00;//6.66;
     default_microenvironment_options.Dirichlet_activation_vector[1]=true;	
   }
   else if(simulation_selected==2)
@@ -550,8 +550,11 @@ default_microenvironment_options.use_oxygen_as_first_field = false;
     microenvironment.add_density( "GLY", "dimensionless" );
 	  microenvironment.diffusion_coefficients[1] = 530;
 	  microenvironment.decay_rates[1] = 0;
+    default_microenvironment_options.initial_condition_vector[0]=parameters.doubles("initial_HM_molarity");
+    default_microenvironment_options.Dirichlet_condition_vector[0] = parameters.doubles("initial_HM_molarity");
+    default_microenvironment_options.Dirichlet_activation_vector[0]=true;	
     default_microenvironment_options.initial_condition_vector[1]=0.00;
-    default_microenvironment_options.Dirichlet_condition_vector[1] = parameters.doubles("internal_GLY_concentration");//1.00;//6.66;
+    default_microenvironment_options.Dirichlet_condition_vector[1] = parameters.doubles("initial_GLY_only_molarity");//1.00;//6.66;
     default_microenvironment_options.Dirichlet_activation_vector[1]=true;	
   
 	//solute_loading(1.11,2.22,3.33,4.44,5.55,6.66);
@@ -602,10 +605,22 @@ default_microenvironment_options.use_oxygen_as_first_field = false;
     microenvironment.add_density( "GLY", "dimensionless" );
 	  microenvironment.diffusion_coefficients[2] = 530;
 	  microenvironment.decay_rates[2] = 0;
+    default_microenvironment_options.initial_condition_vector[0]=parameters.doubles("initial_HM_molarity");
+    default_microenvironment_options.Dirichlet_condition_vector[0] = parameters.doubles("initial_HM_molarity");
+    default_microenvironment_options.Dirichlet_activation_vector[0]=true;	
+    default_microenvironment_options.initial_condition_vector[1]=0.00;
+    default_microenvironment_options.Dirichlet_condition_vector[1] = parameters.doubles("initial_EG_mixed_molarity");//1.00;//6.66;
+    default_microenvironment_options.Dirichlet_activation_vector[1]=true;	
+    default_microenvironment_options.initial_condition_vector[2]=0.00;
+    default_microenvironment_options.Dirichlet_condition_vector[2] = parameters.doubles("initial_GLY_mixed_molarity");//1.00;//6.66;
+    default_microenvironment_options.Dirichlet_activation_vector[2]=true;	
   }
   else
   {
     std::cout<<"running all solutes"<<"\n";
+    microenvironment.add_density( "HM (PBS)", "dimensionless" );
+    microenvironment.diffusion_coefficients[0] = 510;
+    microenvironment.decay_rates[0] = 0;
     microenvironment.add_density( "EG", "dimensionless" );
 	  microenvironment.diffusion_coefficients[1] = 530;
 	  microenvironment.decay_rates[1] = 0;
@@ -863,10 +878,10 @@ void setup_tissue( void )
 	//set_concentrations( 0.2534, 3 );//set external concetratioin of HM to 0.255 
 	//colored_cell_list.resize(0);
 	//select tissue to set up:
-	setup_secondary_stage_follicle();
+	//setup_secondary_stage_follicle();
 	//setup_wedge();
 	//setup_toy_granulosa_model();
-	// setup_just_oocyte();
+	 setup_just_oocyte();
 	// setup_4_granulosa_test_case();
 	initialize_spring_cells();
 	//setup_n_layer_follicle(7);
