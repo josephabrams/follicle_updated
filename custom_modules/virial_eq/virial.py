@@ -7,6 +7,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
 import csv
 from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool
@@ -174,25 +175,29 @@ def grid_search_ternary_1D(osmolality1,solution_osmolality,m2_start_value,m2_end
 #     return b
 ##########################################################################################
 # Polynomial fits to CRC data for conversion between molality and molarity
-
+def polynomial_fit_function(x,a,b,c):
+    return a*x**3+b*x**2+c*x
 def fit_polynomial_from_file(filename,solute_name,x_name,y_name, x_column,y_column,polynomial_degree, lines_to_remove_from_bottom, plotfit=False,save_figure=False):
     data_arr=np.genfromtxt(filename,delimiter=",",names=True,skip_footer=lines_to_remove_from_bottom)
     number_of_rows=data_arr.shape[0]
-    print(number_of_rows)
     x_array=np.zeros(number_of_rows,dtype=float)
     y_array=np.zeros(number_of_rows,dtype=float)
     for i in range(number_of_rows):
         x_array[i]= data_arr[i][x_column]
         y_array[i]= data_arr[i][y_column]
-    print("Imported Data from ",filename, " is: ",x_array, " for x and ", y_array, " for y." )
     fit_x=x_array.flatten()
     fit_y=y_array.flatten()
-    poly_coefficients=np.polynomial.polynomial.polyfit(fit_x,fit_y,polynomial_degree)
-    print("Terms A,B,C,D.. for the polynomial Ax^0+Bx^1+Cx^2+Dx^3... are: ", poly_coefficients)
+    terms_to_fit = 3#np.array([])
+    polynomial_coefficients=np.zeros(4,dtype=float)
+    params=curve_fit(polynomial_fit_function,fit_x,fit_y)
+    for cof in range(3):
+        polynomial_coefficients[cof]=params[0][cof]
+    fliped_coeff=np.flip(polynomial_coefficients)
+    poly_coefficients=fliped_coeff#np.polynomial.Polynomial.fit(fit_x,fit_y,deg=terms_to_fit).convert().coef
 
     if plotfit==True:
         fig, ax = plt.subplots()
-        title="Osmolality plotted with polynomial fit from " + x_name+ " VS "+y_name+ " from file: ."+ filename.strip(".csv")+"/"
+        title="Polynomial fit from " + x_name+ " VS "+y_name+ " from file: ."+ filename.strip(".csv")+"/"
         equation="$y="
         for term in range(len(poly_coefficients)):
             equation+= str(f"{round(poly_coefficients[term],7):.6f}")+"x^"+str(term)+" + "
@@ -202,21 +207,27 @@ def fit_polynomial_from_file(filename,solute_name,x_name,y_name, x_column,y_colu
         y_coord_fitted= 0
         x_coord_fitted= np.linspace(0, int(np.max(fit_x)+1), 200)
         y_coord_osmol=np.ones(len(x_coord_fitted))
+        y_coord_osmol_crc=np.ones(len(x_array))
         for terms in range(len(poly_coefficients)):
             y_coord_fitted+=poly_coefficients[terms]*x_coord_fitted**terms
         for i in range(len(y_coord_osmol)): 
             y_coord_osmol[i]=single_electrolyte_virial(virial_dictionary[solute_name]["kdiss"],y_coord_fitted[i],virial_dictionary[solute_name]["B"],virial_dictionary[solute_name]["C"])
+        for j in range(len(y_coord_osmol_crc)): 
+            y_coord_osmol_crc[j]=single_electrolyte_virial(virial_dictionary[solute_name]["kdiss"],y_array[j],virial_dictionary[solute_name]["B"],virial_dictionary[solute_name]["C"])
+        
         ax.plot(x_coord_fitted, y_coord_fitted,color='#FFC107',linestyle='dotted',label='fitted line')
         ax.plot(x_array,y_array,color='black',marker='x',linestyle='none',label='CRC data points')
         x_pos=int(x_coord_fitted.size/2)
         y_pos=int(y_coord_fitted.size/2)
         x_note=x_coord_fitted[x_pos]
         y_note=y_coord_fitted[y_pos]
-        ax.plot(x_coord_fitted,y_coord_osmol,color='#D81B60',linestyle='dashed', label='osmolality from OVE')
         ax.set_xlabel(x_name)
         ax.set_ylabel(y_name)
         ax.set_title(title)
         ax.annotate(equation,xy=(x_note,y_note), xytext=((2*np.max(x_coord_fitted)/5), (np.min(y_coord_fitted))),arrowprops=dict(facecolor='black', shrink=0.05),annotation_clip=False)
+        ax.legend() 
+        plt.plot()
+        plt.show()
         if save_figure==True:
             plt.savefig(filename.strip(".csv")+"_plot")
         #plot test point fitted from below
@@ -226,35 +237,49 @@ def fit_polynomial_from_file(filename,solute_name,x_name,y_name, x_column,y_colu
        #     plt.plot(3.5, 4.6401493355067505,'bo')
        # if solute_name=="NaCl":
        #     plt.plot(4.5,4.1135133170092635,'bo')
-        secax=ax.secondary_yaxis('right',facecolor="#D81B60")
-        secax.set_ylabel("Osmolality")
-        secax.set_color('#D81B60')
-        ax.spines['right'].set_color('#D81B60')
+        #secax=ax.secondary_yaxis('right',facecolor="#D81B60")
+        fig, ax = plt.subplots()
+        ax.plot(y_array,y_array, marker='x', label='CRC data')
+        ax.plot(y_array,y_coord_osmol_crc, marker='o', label='OVE using CRC values')
+        ax.plot(y_coord_fitted,y_coord_fitted, linestyle='dotted', label='fitted from conversion - would be osmol if ideal, dilute')
+        ax.plot(y_coord_fitted,y_coord_osmol,color='#D81B60',linestyle='dashed', label='osmolality from OVE')
+        ax.set_ylabel("Osmolality")
+        ax.set_xlabel("molality")
+        #ax2.set_color('#D81B60')
+        #ax2.spines['right'].set_color('#D81B60')
         ax.legend()
+        plt.plot()
         plt.show()
+    print("To convert from ", x_name, " to ", y_name, " for ", solute_name," the coefficients in ascending degree are: ", poly_coefficients)
     return poly_coefficients
 """ converting between molarity and molality using polynomial fits found with the above function"""
 def EG_molality_to_molarity(molality):
-    molarity=(4.94707483e-02)+(9.25567439e-01)*molality+(-3.30583531e-02)*molality**2+(5.19836044e-04)*molality**3
+    converter=fit_polynomial_from_file("EG_CRC_data_20_deg_C.csv","EG","molality","molarity",1,2,3,1,plotfit=False,save_figure=False)
+    molarity=(converter[0])+(converter[1])*molality+(converter[2])*molality**2+(converter[3])*molality**3
     return molarity
 
 def EG_molarity_to_molality(molarity):
-    molality=(-0.1020293 )+(1.22474978)*molarity+(-0.03903846)*molarity**2+(0.01382168)*molarity**3
+    converter=fit_polynomial_from_file("EG_CRC_data_20_deg_C.csv","EG","molarity","molality",2,1,3,1,plotfit=False,save_figure=False)
+    molality=(converter[0] )+(converter[1])*molarity+(converter[2])*molarity**2+(converter[3])*molarity**3
     return molality
 
 def GLY_molarity_to_molality(molarity):
-    molality=(2.88553718e-04 )+(1.00173256e+00)*molarity+(7.03911431e-02)*molarity**2+(6.33248557e-03)*molarity**3
+    converter=fit_polynomial_from_file("./Glycerol_CRC_data_20_deg_C.csv","GLY","molarity","molality",2,1,3,1,plotfit=False,save_figure=False)
+    molality=(converter[0] )+(converter[1])*molarity+(converter[2])*molarity**2+(converter[3])*molarity**3
     return molality
-def GLY_molality_to_molarity(molality):
-    molarity=(-2.47406091e-04)+(9.98060423e-01)*molality+(-6.98861715e-02)*molality**2+(3.93428154e-03)*molality**3
+def GLY_molality_to_molarity(molality): 
+    converter=fit_polynomial_from_file("./Glycerol_CRC_data_20_deg_C.csv","GLY","molality","molarity",1,2,3,1,plotfit=False,save_figure=False)
+    molarity=(converter[0])+(converter[1])*molality+(converter[2])*molality**2+(converter[3])*molality**3
     return molarity
 
 def NaCl_molarity_to_molality(molarity):
-    molality=(-6.57836263e-04 )+(1.00094560e+00)*molarity+(-1.96631754e-02 )*molarity**2+(8.88368189e-05)*molarity**3
+    converter=fit_polynomial_from_file("./NaCl_CRC_data_20_deg_C.csv","NaCl","molarity","molality",2,1,3,1,plotfit=False,save_figure=False)
+    molality=(converter[0] )+(converter[1])*molarity+(converter[2])*molarity**2+(converter[3])*molarity**3
     return molality
    
 def NaCl_molality_to_molarity(molality):
-    molarity=(1.41031837e-04 )+(1.00118966e+00 )*molality+(1.78231574e-02 )*molality**2+(1.15175694e-03)*molality**3
+    converter=fit_polynomial_from_file("./NaCl_CRC_data_20_deg_C.csv","NaCl","molality","molarity",1,2,3,1,plotfit=False,save_figure=False)
+    molarity=(converter[0])+(converter[1])*molality+(converter[2])*molality**2+(converter[3])*molality**3
     return molarity
 
  
@@ -329,7 +354,7 @@ def main():
     the fitted line will be correct but the osmolality line will be wrong for molality vs molarity"""
 
     """ Fitting Ethylene Glycol (EG) conversion with data from CRC"""
-    fit_polynomial_from_file("EG_CRC_data_20_deg_C.csv","EG","molarity","molality",2,1,3,1,plotfit=False,save_figure=False)
+    fit_polynomial_from_file("EG_CRC_data_20_deg_C.csv","EG","molarity","molality",2,1,3,1,plotfit=True,save_figure=False)
 #    fit_polynomial_from_file("EG_CRC_data_20_deg_C.csv","EG","molality","molarity",1,2,3,1,plotfit=False,save_figure=False)
 #    
 #    #testing the conversion function
@@ -363,6 +388,8 @@ def main():
 
     print("Initial molarities are: ", round(nacl_molarity,3), " mol/L NaCl, ", round(eg_molarity,3)," mol/L EG, and ", round(gly_molarity,3), " mol/L GLY for the single permeating CPAs. ")
     print("For EG & GLY the intial molarities are ", round(nacl_molarity,3), " mol/L NaCl, ",round(eg_mixed_molarity,3), " mol/L EG, and ", round(gly_mixed_molarity,3), " mol/L GLY." )
-    print("For PBS solutions the intial molarities are ", round(PBS_05x_molarity,3), " mol/L for 0.5x, ",round(PBS_1x_molarity,3), " mol/L for 1x, ", round(PBS_2x_molarity,3), " mol/L for 2x, and ", round(PBS_5x_molarity,3), " mol/L for 5x PBS." )
+    print("For PBS solutions the intial molarities are ", round(PBS_05x_molarity,3), " mol/L for 0.5x, ",round(PBS_1x_molarity,3))
+    print(" mol/L for 1x, ", round(PBS_2x_molarity,3), " mol/L for 2x, and ", round(PBS_5x_molarity,3), " mol/L for 5x PBS." )
+    print(" Those are all the initial molarities.")
 if __name__ == '__main__':
     main()

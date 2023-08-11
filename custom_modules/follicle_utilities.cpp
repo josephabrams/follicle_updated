@@ -8,16 +8,18 @@
 // #include "./springs.h"
 // using namespace Springs;
 //  #include <stdef.h>
-//   Global Variables
+//   Global Variables - will probably add to XML eventually to avoid macros
 #define PI 3.14159265
 #define R 0.08205 // granulosa (10^-3 J/mole*k)
-const static std::vector<std::vector<double>> molar_conversion_coeff={{1.1,1.2},{2.1,2.2},{3.1,3.2}};
+//const static std::vector<std::vector<double>> molar_conversion_coeff={{1.1,1.2},{2.1,2.2},{3.1,3.2}};
+/* returns the disance vector pointing from cell_1 to cell_2 */
 std::vector<double> displacement_between_membranes(Cell *pCell_1, Cell *pCell_2) {
   // from pCell_1 to pCell_2 vector operator defined in bioFVM
   std::vector<double> displacement = pCell_2->position - pCell_1->position;
   displacement = distance_between_membranes(pCell_1, pCell_2) * normalize(displacement);
   return displacement;
 }
+/* return the distance between spherical cell membranes always positive*/
 double distance_between_membranes(Cell *pCell_1, Cell *pCell_2) {
   double distance = std::abs(norm(pCell_2->position - pCell_1->position) - pCell_1->phenotype.geometry.radius - pCell_2->phenotype.geometry.radius);
   return distance;
@@ -26,31 +28,32 @@ double distance_between_membranes(Cell *pCell_1, Cell *pCell_2) {
 // loop through all neighboors
 void initialize_neighboring_spring_connections() {
   //old version probably deprecate
-  for (int i = 0; i < (*all_cells).size(); i++) {
-
-    Cell *pCell = (*all_cells)[i];
-    attach_neighboring_springs(pCell, 1.0);
-  }
+//  for (int i = 0; i < (*all_cells).size(); i++) {
+//
+//    Cell *pCell = (*all_cells)[i];
+//    attach_neighboring_springs(pCell, 1.0);
+//  }
   return;
 }
 void attach_neighboring_springs(Cell *pCell, double max_spring_length) 
 {
+  // this is old code now using Spring_Cell class need to deprecate and fix any dependent functions
   // check nearby cells to identify neighboors using built in mechanics voxel
   // if less than max spring length store (pCell, rest length)
-  std::vector<Cell *> neighbors = find_nearby_cells(pCell);
-#pragma omp critical // make safe for push_back
-  {
-    for (int i = 0; i < neighbors.size(); i++) {
-      Cell *pNeighbor = neighbors[i];
-      double distance = distance_between_membranes(pCell, pNeighbor);
-      if (distance <= max_spring_length) {
-        //testing spring class here
-        //pCell->state.connection_and_spring_length.push_back(std::make_pair(pNeighbor, distance));
-        pCell->state.neighbors.push_back(pNeighbor); // uses built in neighboor storage, default velocity
-                        // function must be off or this will get overwritten
-      }
-    }
-  }
+//  std::vector<Cell *> neighbors = find_nearby_cells(pCell);
+//#pragma omp critical // make safe for push_back
+//  {
+//    for (int i = 0; i < neighbors.size(); i++) {
+//      Cell *pNeighbor = neighbors[i];
+//      double distance = distance_between_membranes(pCell, pNeighbor);
+//      if (distance <= max_spring_length) {
+//        //testing spring class here
+//        //pCell->state.connection_and_spring_length.push_back(std::make_pair(pNeighbor, distance));
+//        pCell->state.neighbors.push_back(pNeighbor); // uses built in neighboor storage, default velocity
+//                        // function must be off or this will get overwritten
+//      }
+//    }
+//  }
   return;
 }
 //   // check nearby cells to identify neighboors using built in mechanics voxel
@@ -201,7 +204,7 @@ std::vector<int> get_interior_voxels(Cell* pCell)
    //if voxel is edge voxel count as exterior
   //a voxel is exterior if some of its corners fall within the sphere but not all 
   //take tight bounding box and remove voxels where all or none of the corners are <Radius
-    std::vector <int> bounding_voxels=diffusion_bounding_box(pCell);
+    std::vector<int> bounding_voxels=diffusion_bounding_box(pCell);
     std::vector<int> interior_voxels={};
     std::vector<int> return_voxel_index={};
 
@@ -230,46 +233,47 @@ std::vector<int> get_interior_voxels(Cell* pCell)
 
 void solute_loading( double oxygen, double final_solute_concentration_1, double final_solute_concentration_2,double final_solute_concentration_3,double final_solute_concentration_4, double final_solute_concentration_5)
 {
-  //TODO: UPDATE THIS TO WORK
-	//Dirichlet node for all the voxels located outside of the ring
-	std::vector<double> dirichlet_solute_end_state( 3 , 0.0 );
-	dirichlet_solute_end_state[0]=9.0;//oxygen;//oxygen
-	dirichlet_solute_end_state[1]=8.0;//final_solute_concentration_1;//hm
-	dirichlet_solute_end_state[2]=10.0;//final_solute_concentration_2;//eg
-	//dirichlet_solute_end_state[3]=final_solute_concentration_3;//gly
-  //dirichlet_solute_end_state[4]=final_solute_concentration_4;//pbs
-	//dirichlet_solute_end_state[5]=final_solute_concentration_5;//suc
-	//dirichlet_solute[4]=0.0;//sucrose
-	//Dirichlet nodes for all the voxels located inside of the ring
-/*	std::vector<double> dirichlet_solute_start_state( 3 , 0 );
-	dirichlet_solute_start_state[0]=0.0;//annoying oxygen no idea how to get rid of it but its turned off
-	dirichlet_solute_start_state[1]=initial_solute_concentration_1;//final_external_osmolarity;//eg
-	dirichlet_solute_start_state[2]=initial_solute_concentration_2;//gly
-*/
-/*
-	for( int i=0; i < microenvironment.number_of_voxels() ; i++ )
-	{
-		if(dist(microenvironment.voxels(i).center, {0.0,0.0,0.0})>=130)
-		{
-			microenvironment.update_dirichlet_node( i,dirichlet_solute_end_state );
-		}
-		else
-		{
-			microenvironment.remove_dirichlet_node(i);
-		}
-	}
-*/
-	for( int i=0; i < microenvironment.number_of_voxels() ; i++ )//something here isn't right TODO: Check this
-	{
-		if(dist(microenvironment.voxels(i).center, {0.0,0.0,0.0})>=10)
-		{
-			// microenvironment.density_vector(i)=dirichlet_solute_end_state;//<<-- is this right?
-		}
-		else
-		{
-			//microenvironment.remove_dirichlet_node(i);
-		}
-	}
+  //function to set dirichlet nodes during simulation
+  //TODO: Do I still need this? commented out for now, but would need restructuring
+  ////Dirichlet node for all the voxels located outside of the ring
+//   std::vector<double> dirichlet_solute_end_state( 3 , 0.0 );
+// 	dirichlet_solute_end_state[0]=9.0;//oxygen;//oxygen
+// 	dirichlet_solute_end_state[1]=8.0;//final_solute_concentration_1;//hm
+// 	dirichlet_solute_end_state[2]=10.0;//final_solute_concentration_2;//eg
+// 	//dirichlet_solute_end_state[3]=final_solute_concentration_3;//gly
+//   //dirichlet_solute_end_state[4]=final_solute_concentration_4;//pbs
+// 	//dirichlet_solute_end_state[5]=final_solute_concentration_5;//suc
+// 	//dirichlet_solute[4]=0.0;//sucrose
+// 	//Dirichlet nodes for all the voxels located inside of the ring
+// /*	std::vector<double> dirichlet_solute_start_state( 3 , 0 );
+// 	dirichlet_solute_start_state[0]=0.0;//annoying oxygen no idea how to get rid of it but its turned off
+// 	dirichlet_solute_start_state[1]=initial_solute_concentration_1;//final_external_osmolarity;//eg
+// 	dirichlet_solute_start_state[2]=initial_solute_concentration_2;//gly
+// */
+// /*
+// 	for( int i=0; i < microenvironment.number_of_voxels() ; i++ )
+// 	{
+// 		if(dist(microenvironment.voxels(i).center, {0.0,0.0,0.0})>=130)
+// 		{
+// 			microenvironment.update_dirichlet_node( i,dirichlet_solute_end_state );
+// 		}
+// 		else
+// 		{
+// 			microenvironment.remove_dirichlet_node(i);
+// 		}
+// 	}
+// */
+// 	for( int i=0; i < microenvironment.number_of_voxels() ; i++ )//something here isn't right TODO: Check this
+// 	{
+// 		if(dist(microenvironment.voxels(i).center, {0.0,0.0,0.0})>=10)
+// 		{
+// 			// microenvironment.density_vector(i)=dirichlet_solute_end_state;//<<-- is this right?
+// 		}
+// 		else
+// 		{
+// 			//microenvironment.remove_dirichlet_node(i);
+// 		}
+// 	}
 	return;
 }
 
@@ -372,12 +376,18 @@ std::vector<double> Hookes_law_force(std::vector<double> direction, double rest_
   //std::cout<<"Hookes law: "<< force<<"\n";
   return force;
 }
-
-void non_connected_neighbor_pressure(Cell* pCell, double dt) {
+void update_all_forces(Cell* pCell, double dt, double spring_constant) {
+  //these both update velocity 
+  non_connected_neighbor_pressure(pCell,dt,spring_constant);
+  custom_add_potentials_for_pCells(pCell);
+  return;
+}
+void non_connected_neighbor_pressure(Cell* pCell, double dt, double spring_constant) {
   // similar to the new function in PhysiCell 1.10 automatically pushes on cells
   // that press up against the cell; however this version doesnt require the
   // cell to be the same size as mechanics voxel uses same spring value as
   // connections, avoids double pushing on connected cells
+  // probably much slower than it could be, optomize in future
   std::vector<Cell *> possible_neighbors = cells_in_me(pCell); // vector containing cells that could be interacting
                                                                // with pCell that aren't in neighboors
   std::vector<Cell *> non_connected_neighbors;
@@ -406,19 +416,14 @@ void non_connected_neighbor_pressure(Cell* pCell, double dt) {
     // std::cout<<" I is "<< i<<std::endl;
     neighbor = non_connected_neighbors[i];
     // std::cout<<neighbor<<std::endl;
-    std::vector<double> force_on_neighbor_direction =
-        neighbor->position - pCell->position;
+    std::vector<double> force_on_neighbor_direction = neighbor->position - pCell->position;
     // if statement assumes strict interpentration of neighboors membrane into
     // pCells membrane to exert spring pressure
-    if ((norm(force_on_neighbor_direction) -
-         neighbor->phenotype.geometry.radius) <
-        pCell->phenotype.geometry.radius) {
+    if ((norm(force_on_neighbor_direction) - neighbor->phenotype.geometry.radius) < pCell->phenotype.geometry.radius) {
       double spring_stretch = distance_between_membranes(pCell, neighbor);
-      std::vector<double> force_on_neighbor =
-          Hookes_law_force(force_on_neighbor_direction, 0, spring_stretch,
-                           pCell->custom_data["spring_constant"]);
+      std::vector<double> force_on_neighbor = Hookes_law_force(force_on_neighbor_direction, 0, spring_stretch, spring_constant);
       double neighbor_mass = neighbor->phenotype.volume.total; // mass_of_cell(neighboor);
-              //TODO make mass of cell function
+      //TODO: make mass of cell function
       double pCell_mass = pCell->phenotype.volume.total;
       //#pragma omp private(neighbor) for
       for (int coord=0; coord<3; coord++)
@@ -441,15 +446,9 @@ void non_connected_neighbor_pressure(Cell* pCell, double dt) {
       //     (abs(force_on_neighbor[2] / neighbor_mass * dt) < 1e-16)
       //         ? 0.0
       //         : (force_on_neighbor[2] / neighbor_mass * dt);
-      sum_x_velocity += (std::abs(force_on_neighbor[0] / pCell_mass * dt) < 1e-12)
-                            ? 0.0
-                            : (force_on_neighbor[0] / pCell_mass * dt);
-      sum_y_velocity += (std::abs(force_on_neighbor[1] / pCell_mass * dt) < 1e-12)
-                            ? 0.0
-                            : (force_on_neighbor[1] / pCell_mass * dt);
-      sum_z_velocity += (std::abs(force_on_neighbor[2] / pCell_mass * dt) < 1e-12)
-                            ? 0.0
-                            : (force_on_neighbor[2] / pCell_mass * dt);
+      sum_x_velocity += (std::abs(force_on_neighbor[0] / pCell_mass * dt) < 1e-12) ? 0.0 : (force_on_neighbor[0] / pCell_mass * dt);
+      sum_y_velocity += (std::abs(force_on_neighbor[1] / pCell_mass * dt) < 1e-12) ? 0.0 : (force_on_neighbor[1] / pCell_mass * dt);
+      sum_z_velocity += (std::abs(force_on_neighbor[2] / pCell_mass * dt) < 1e-12) ? 0.0 : (force_on_neighbor[2] / pCell_mass * dt);
     }
     // TODO: possibly, eventually use Adams_Bashforth_ODE_2nd_Order for velocity
   }
@@ -491,6 +490,36 @@ std::vector<double> Ynext;
   }
   return Ynext;
 }
+std::vector<std::vector<double>> create_spheroid(double cell_radius, double sphere_radius) 
+{
+  std::vector<std::vector<double>> cells;
+  int xc = 0, yc = 0, zc = 0;
+  double x_spacing = cell_radius * sqrt(3);
+  double y_spacing = cell_radius * 2;
+  double z_spacing = cell_radius * sqrt(3);
+  std::vector<double> tempPoint(3, 0.0);
+
+  for (double z = -sphere_radius; z < sphere_radius; z += z_spacing, zc++) {
+    for (double x = -sphere_radius; x < sphere_radius; x += x_spacing, xc++) {
+      for (double y = -sphere_radius; y < sphere_radius; y += y_spacing, yc++) {
+        tempPoint[0] = x + (zc % 2) * 0.5 * cell_radius;
+        tempPoint[1] = y + (xc % 2) * cell_radius;
+        tempPoint[2] = z;
+
+        if (sqrt(norm_squared(tempPoint)) < sphere_radius) {
+          /* output file of initial positions
+          std::ofstream ofs;
+          ofs.open ("temp_points_location.csv", std::ofstream::out |
+          std::ofstream::app); ofs <<(sqrt(norm_squared(tempPoint)))<<"," <<"\n";
+          ofs.close();
+          */
+          cells.push_back(tempPoint);
+        }
+      }
+    }
+  }
+  return cells;
+}
 std::vector<std::vector<double>> create_cell_sphere_positions(double cell_radius, double sphere_radius,double inner_radius) 
 {
   std::vector<std::vector<double>> cells;
@@ -509,10 +538,10 @@ std::vector<std::vector<double>> create_cell_sphere_positions(double cell_radius
 
         if (sqrt(norm_squared(tempPoint)) < sphere_radius) {
           if (sqrt(norm_squared(tempPoint)) > inner_radius) {
-            /*
-std::ofstream ofs;
+            /* output file of initial positions
+            std::ofstream ofs;
             ofs.open ("temp_points_location.csv", std::ofstream::out |
-std::ofstream::app); ofs <<(sqrt(norm_squared(tempPoint))-30)<<"," <<"\n";
+            std::ofstream::app); ofs <<(sqrt(norm_squared(tempPoint)))<<"," <<"\n";
             ofs.close();
             */
             cells.push_back(tempPoint);
@@ -526,7 +555,7 @@ std::ofstream::app); ofs <<(sqrt(norm_squared(tempPoint))-30)<<"," <<"\n";
 
 void break_TZPs(Spring_Cell* Oocyte,double max_breakage_distance) 
 {
-  for (int i=0; i<Oocyte->m_springs.size();i++) {
+  for (int i=0; i<Oocyte->m_springs.size();i++) {//loop through the oocytes springs
     Spring* S;
     S=(Oocyte->m_springs[i]);
     if(distance_between_membranes(Oocyte->m_my_pCell,S->m_pNeighbor)>max_breakage_distance)
@@ -536,42 +565,81 @@ void break_TZPs(Spring_Cell* Oocyte,double max_breakage_distance)
   } 
   return;
 }
-void two_parameter_single_step(Cell* pCell, Phenotype &phenotype, double dt) // two_p
+void update_interior_concentrations(Spring_Cell* SPcell)
 {
-  Spring_Cell* SPcell=spring_cell_by_pCell_index[pCell->index];
-  update_concentrations(SPcell);//handles exterior concentrations
-  // std::cout<<"External "<<SPcell->exterior_osmolality<<"\n";
-  // std::cout<<"Internal "<<SPcell->interior_osmolality<<"\n";
-
-  // std::cout<<"pre moles: "<<SPcell->solute_moles<<"\n";
-  SPcell->dVw_Osmolality();
-  SPcell->dN_molarity();
-  SPcell->two_p_forward_step();
-  SPcell->two_p_update_volume();
   double osmotically_active_volume=SPcell->water_volume+SPcell->solute_volume;
   // std::cout<<"osmotically_active_volume: "<< osmotically_active_volume<<"\n"; 
   // std::cout<<"should be the same volume: "<< SPcell->m_my_pCell->phenotype.volume.total-SPcell->solid_volume<<"\n";
   // std::cout<<"total volume: "<< SPcell->m_my_pCell->phenotype.volume.total<<"\n";
-  for(size_t i=0; i<SPcell->solute_moles.size(); i++)
+  for(size_t i=0; i<SPcell->solute_moles.size(); i++)// loop through vector of solute_moles indexed by solute 
   {
-
-    // std::cout<<"moles: "<< SPcell->solute_moles[i]<<"\n";
-    SPcell->interior_molarity[i]=SPcell->solute_moles[i]/osmotically_active_volume;
-    // std::cout<<"molarities: "<< SPcell->interior_molarity[i]<<"\n";
+    SPcell->interior_molarity[i]=SPcell->solute_moles[i]/osmotically_active_volume;// calculate molarity
   }
   if(SPcell->simulation_selected==1)
-    {
+    {// only EG selected
       SPcell->interior_component_molality[0]=molarity_to_molality(SPcell->interior_molarity[0], "NaCl");
       SPcell->interior_component_molality[1]=molarity_to_molality(SPcell->interior_molarity[1], "EG");
-  //     
-  //    // std::cout<<"interior_component_molality 0: "<< SPcell->interior_component_molality[0]<<"\n";   
-  //    // std::cout<<"interior_component_molality 1: "<< SPcell->interior_component_molality[1]<<"\n";   
-     // double vir=ternary_virial(SPcell->interior_component_molality[0],SPcell->interior_component_molality[1],"NaCl","EG"); 
-     // std::cout<<"Interior OSMOLALITY: "<< vir<<"\n";   
       SPcell->interior_osmolality=ternary_virial(SPcell->interior_component_molality[0],SPcell->interior_component_molality[1],"NaCl","EG");
-//SPcell->interior_component_molality[0]*1.68+SPcell->interior_component_molality[1];  
   }
+  else if(SPcell->simulation_selected==2)
+    {// only EG selected
+      SPcell->interior_component_molality[0]=molarity_to_molality(SPcell->interior_molarity[0], "NaCl");
+      SPcell->interior_component_molality[1]=molarity_to_molality(SPcell->interior_molarity[1], "GLY");
+      SPcell->interior_osmolality=ternary_virial(SPcell->interior_component_molality[0],SPcell->interior_component_molality[1],"NaCl","GLY");
+  }
+  else if(SPcell->simulation_selected==3)
+    {// only EG selected
+      SPcell->interior_component_molality[0]=molarity_to_molality(SPcell->interior_molarity[0], "NaCl");
+      SPcell->interior_osmolality=binary_virial(SPcell->interior_component_molality[0],"NaCl");
+  }
+  else if(SPcell->simulation_selected==4)
+    {// only EG selected
+      SPcell->interior_component_molality[0]=molarity_to_molality(SPcell->interior_molarity[0], "NaCl");
+      SPcell->interior_component_molality[1]=molarity_to_molality(SPcell->interior_molarity[1], "EG");
+      SPcell->interior_component_molality[2]=molarity_to_molality(SPcell->interior_molarity[2], "GLY");
+      SPcell->interior_osmolality=binary_virial(SPcell->interior_component_molality[0],"NaCl")+ternary_virial(SPcell->interior_component_molality[1],SPcell->interior_component_molality[2],"EG","GLY");
+  }
+  else{
+    std::cout<<"BAD SIMULATION SELECTED CHECK THE XML FILE!"<<"\n";
+  }
+  return;
+}
+void two_parameter_single_step(Cell* pCell, Phenotype &phenotype, double dt) // two_p
+{
+  Spring_Cell* SPcell=spring_cell_by_pCell_index[pCell->index]; //find the spring_cell containing pCell by its index
+  update_exterior_concentrations(SPcell);//update and get exterior concentrations
+  // std::cout<<"External "<<SPcell->exterior_osmolality<<"\n";
+  // std::cout<<"Internal "<<SPcell->interior_osmolality<<"\n";
 
+  // std::cout<<"pre moles: "<<SPcell->solute_moles<<"\n";
+  SPcell->dVw_Osmolality();// calculate dVw/dt
+  SPcell->dN_molarity();// calculate dN/dt
+  SPcell->two_p_forward_step(dt);// forward step Adams-bashforth 2nd order uses dN and dVw to get new moles and water volume
+  SPcell->two_p_update_volume();// update pCell volume and Spring Cell water and solute volume
+//   double osmotically_active_volume=SPcell->water_volume+SPcell->solute_volume;
+//   // std::cout<<"osmotically_active_volume: "<< osmotically_active_volume<<"\n"; 
+//   // std::cout<<"should be the same volume: "<< SPcell->m_my_pCell->phenotype.volume.total-SPcell->solid_volume<<"\n";
+//   // std::cout<<"total volume: "<< SPcell->m_my_pCell->phenotype.volume.total<<"\n";
+//   for(size_t i=0; i<SPcell->solute_moles.size(); i++)// loop through vector of solute_moles indexed by solute 
+//   {
+//
+//     // std::cout<<"moles: "<< SPcell->solute_moles[i]<<"\n";
+//     SPcell->interior_molarity[i]=SPcell->solute_moles[i]/osmotically_active_volume;// calculate molarity
+//     // std::cout<<"molarities: "<< SPcell->interior_molarity[i]<<"\n";
+//   }
+//   if(SPcell->simulation_selected==1)
+//     {// only EG selected
+//       SPcell->interior_component_molality[0]=molarity_to_molality(SPcell->interior_molarity[0], "NaCl");
+//       SPcell->interior_component_molality[1]=molarity_to_molality(SPcell->interior_molarity[1], "EG");
+//   //     
+//   //    // std::cout<<"interior_component_molality 0: "<< SPcell->interior_component_molality[0]<<"\n";   
+//   //    // std::cout<<"interior_component_molality 1: "<< SPcell->interior_component_molality[1]<<"\n";   
+//      // double vir=ternary_virial(SPcell->interior_component_molality[0],SPcell->interior_component_molality[1],"NaCl","EG"); 
+//      // std::cout<<"Interior OSMOLALITY: "<< vir<<"\n";   
+//       SPcell->interior_osmolality=ternary_virial(SPcell->interior_component_molality[0],SPcell->interior_component_molality[1],"NaCl","EG");
+// //SPcell->interior_component_molality[0]*1.68+SPcell->interior_component_molality[1];  
+//   }
+/* code for testing function 
   int counting_test=0;
       // std::cout<<"AREA: "<<SPcell->surface_area<<"\n";
   if(osmotically_active_volume<551060&& SPcell->interior_osmolality>0.5|| SPcell->interior_osmolality<0.01)
@@ -589,8 +657,8 @@ void two_parameter_single_step(Cell* pCell, Phenotype &phenotype, double dt) // 
     } 
     counting_test++;
   }
-
-
+*/
+  update_interior_concentrations(SPcell);
 
   uptake(SPcell); 
   return;
@@ -623,7 +691,7 @@ void uptake_in_one_voxel(int voxel, double water_uptake_per_voxel, std::vector<d
   double voxel_volume=default_microenvironment_options.dx*default_microenvironment_options.dy*default_microenvironment_options.dz;
   std::vector<double> temp_density_vec=microenvironment.density_vector(voxel);
   std::vector <double> moles_in_voxel;
-    moles_in_voxel.resize(solute_uptake_per_voxel.size(),0.0);
+  moles_in_voxel.resize(solute_uptake_per_voxel.size(),0.0);
   for(int i=0; i<solute_uptake_per_voxel.size(); i++)
   {
     moles_in_voxel[i]=(temp_density_vec[i]*voxel_volume);//fmole/um^3* um^3 
@@ -647,45 +715,45 @@ void uptake_in_one_voxel(int voxel, double water_uptake_per_voxel, std::vector<d
 }
 void rasterize_my_uptake(Cell* pCell, double solute_index)//old version
 {
-  std::cout<<"WARNING OLD VERSION OF UPTAKING"<<"\n";
-  double total_voxel_volume=0.0;
-  double uptake_per_voxel=0.0;
-  //test double
-  double custom_cell_uptake=2.22;//kg/um^3 dt already factored in at calculate 2p//TODO add this to custom_data this should be the value adjusted by Compute_2P
-  std::vector<int> interior_voxels=get_interior_voxels(pCell);
-  //get my interior voxels
-  if(interior_voxels.size()==1)
-  {
-    //smaller than voxel
-    total_voxel_volume=pCell->get_container()->underlying_mesh.dV;
-    uptake_per_voxel=custom_cell_uptake*total_voxel_volume/(pCell->phenotype.volume.total);
-  }
-  else
-  {
-    //if multivoxel divide 
-    total_voxel_volume=interior_voxels.size()*pCell->get_container()->underlying_mesh.dV;
-    uptake_per_voxel=custom_cell_uptake*total_voxel_volume/(pCell->phenotype.volume.total);
-  }
-  //for my voxels uptake (secretion=-uptake)
-  #pragma omp critical
-  {
-    for (size_t i = 0; i < interior_voxels.size(); i++)
-    {
-      microenvironment.density_vector(interior_voxels[i])[solute_index]+=uptake_per_voxel;
-      
-    }
-  }
+  std::cout<<"WARNING!!! OLD VERSION OF UPTAKING ARE YOU SURE YOU WANT TO USE THIS??"<<"\n";
+  // double total_voxel_volume=0.0;
+  // double uptake_per_voxel=0.0;
+  // //test double
+  // double custom_cell_uptake=2.22;//kg/um^3 dt already factored in at calculate 2p//TODO add this to custom_data this should be the value adjusted by Compute_2P
+  // std::vector<int> interior_voxels=get_interior_voxels(pCell);
+  // //get my interior voxels
+  // if(interior_voxels.size()==1)
+  // {
+  //   //smaller than voxel
+  //   total_voxel_volume=pCell->get_container()->underlying_mesh.dV;
+  //   uptake_per_voxel=custom_cell_uptake*total_voxel_volume/(pCell->phenotype.volume.total);
+  // }
+  // else
+  // {
+  //   //if multivoxel divide 
+  //   total_voxel_volume=interior_voxels.size()*pCell->get_container()->underlying_mesh.dV;
+  //   uptake_per_voxel=custom_cell_uptake*total_voxel_volume/(pCell->phenotype.volume.total);
+  // }
+  // //for my voxels uptake (secretion=-uptake)
+  // #pragma omp critical
+  // {
+  //   for (size_t i = 0; i < interior_voxels.size(); i++)
+  //   {
+  //     microenvironment.density_vector(interior_voxels[i])[solute_index]+=uptake_per_voxel;
+  //     
+  //   }
+  // }
   return;
   
 }
 //as of May 23 2023 mechanics voxels seem to equal microenvironment voxels
-std::vector <int> basement_membrane_voxels{};//external list for checking if a cell is intersecting the basement membrane
+std::vector<int> basement_membrane_voxels{};//external list for checking if a cell is intersecting the basement membrane
 std::vector<int> get_basement_membrane_intersection(std::vector <double> center_point, double radius)
 {
   double voxel_size=default_microenvironment_options.dx;
   //double inner_radius=radius-voxel_size;
   double outer_radius=radius+(voxel_size);//~2 voxels thick
-     //if voxel is edge voxel count as exterior
+  //if voxel is edge voxel count as exterior
   //a voxel is exterior if some of its corners fall within the sphere but not all 
   //take tight bounding box and remove voxels where all or none of the corners are <Radius
     std::vector <int> bounding_voxels=spherical_bounding_box(center_point,outer_radius);
@@ -897,6 +965,7 @@ std::vector <int> general_voxel_bounding_box(std::vector <double> starting_posit
  
   return bounding_box_by_index;
 }
+/* function just connects the spring cells doesn't check distances, this might be better places in springs.cpp     */
 void connect_spring_cells(Spring_Cell* SpCell_1, Spring_Cell* SpCell_2)
 {
   double spring_length=distance_between_membranes(SpCell_1->m_my_pCell,SpCell_2->m_my_pCell);
@@ -926,6 +995,7 @@ std::vector <Cell*> cells_in_neighborhood(Cell* pCell, double maximum_interactio
   }
   return cells_found;
 }
+/* function to add the forces from all the connected cells, this needs to be combined with non-connected cell forces in a thread safe way*/
 void custom_add_potentials(Spring_Cell* SpCell)
 {
   double dt=0.01;
@@ -948,9 +1018,9 @@ void custom_add_potentials(Spring_Cell* SpCell)
   {
     sum_of_forces.insert(sum_of_forces.end(),sum_of_forces_private.begin(),sum_of_forces_private.end());
     //std::cout<<"sum of forces"<<sum_of_forces<<std::endl;
-    sum_of_forces[0]=(dt*sum_of_forces[0]/SpCell->m_my_pCell->phenotype.volume.total); //f/m=a=(dv/dt)
-    sum_of_forces[1]=(dt*sum_of_forces[1]/SpCell->m_my_pCell->phenotype.volume.total); //f/m=a=(dv/dt)
-    sum_of_forces[2]=(dt*sum_of_forces[2]/SpCell->m_my_pCell->phenotype.volume.total); //f/m=a=(dv/dt)
+    sum_of_forces[0]=(dt*sum_of_forces[0]/SpCell->m_my_pCell->phenotype.volume.total); //f/m=a=(dv/dt) in x
+    sum_of_forces[1]=(dt*sum_of_forces[1]/SpCell->m_my_pCell->phenotype.volume.total); //f/m=a=(dv/dt) in y
+    sum_of_forces[2]=(dt*sum_of_forces[2]/SpCell->m_my_pCell->phenotype.volume.total); //f/m=a=(dv/dt) in z
     SpCell->m_my_pCell->velocity+=sum_of_forces;
   }
   return;
@@ -1016,18 +1086,30 @@ void initialize_spring_connections()
   return;
 }
 void create_spring_cell_from_cell(Cell* pCell, Phenotype& phenotype)
-{ //cell types must be created individually to pass phenotype
+{ //not used at the moment
   
   return;
 }
-std::unordered_map<std::string,double> molal_conversion_coeff_A={{"EG",1},{"GLY",1},{"NaCl",1.0}};
-std::unordered_map<std::string,double> molal_conversion_coeff_B={{"EG",0.037},{"GLY",0.023},{"NaCl",0.044}};
+/*convert from molarity to molality using the polynomial Ax^3+Bx^2+Cx+D, D is 0 where they intercept 
+ * from python files in virial folder using CRC data located there for 20 degrees C --assumed ~= at 23 C
+ * To convert from  molarity  to  molality  for  EG  the coefficients are:  [ 0.01277023 -0.02080002  1.13628309  0.        ]
+ * To convert from  molarity  to  molality  for  GLY  the coefficients are:  [0.00665793 0.06926148 1.00285049 0.        ]
+ * To convert from  molarity  to  molality  for  NaCl  the coefficients are:  [ 5.80771883e-05 -1.93492494e-02  1.00003795e+00  0.00000000e+00]
+ * */
+std::unordered_map<std::string,double> molal_conversion_coeff_A={{"EG",0.01277023},{"GLY",0.00665793},{"NaCl",5.80771883e-05}};
+std::unordered_map<std::string,double> molal_conversion_coeff_B={{"EG",-0.02080002},{"GLY",0.06926148},{"NaCl",-1.93492494e-02}};
+std::unordered_map<std::string,double> molal_conversion_coeff_C={{"EG",1.13628309},{"GLY",1.00285049},{"NaCl",1.00003795}};
+std::unordered_map<std::string,double> molal_conversion_coeff_D={{"EG",0.0},{"GLY",0.0},{"NaCl",0.0}};
+
 double molarity_to_molality(double molarity, std::string component_name)
 {
   double molality=0.0;
-  molality= molarity;//molal_conversion_coeff_A[component_name]*molarity*molarity+molal_conversion_coeff_B[component_name]*molarity;
+  molality= molal_conversion_coeff_A[component_name]*molarity*molarity*molarity+molal_conversion_coeff_B[component_name]*molarity*molarity+molal_conversion_coeff_C[component_name]*molarity+molal_conversion_coeff_D[component_name];
   return molality;
 }
+/*
+ * The virial osmotic coefficients for the cubic virial osmotic equation and molar_mass
+ * */
 std::unordered_map<std::string,double> virial_coeff_B={{"EG",0.037},{"GLY",0.023},{"NaCl",0.044}};
 std::unordered_map<std::string,double> virial_coeff_C={{"EG",-0.001},{"GLY",0.0},{"NaCl",0.0}};
 std::unordered_map<std::string,double> kdiss={{"EG",1.0},{"GLY",1.0},{"NaCl",1.678}};
@@ -1045,7 +1127,8 @@ double ternary_virial(double molality_1, double molality_2, std::string componen
 {
     //compute virial equation uses vectors for future expansion
   double osmolality=0.0;
-  // #pragma omp reduction(+:osmolality)
+  // #pragma omp reduction(+:osmolality) 
+  // avoid thread issues by mearly computing all the terms
   std::vector <double> m={molality_1*kdiss[component_1],molality_2*kdiss[component_2]};
   std::vector <double> B={virial_coeff_B[component_1],virial_coeff_B[component_2]};
   std::vector <double> C={virial_coeff_C[component_1],virial_coeff_C[component_2]};
@@ -1069,14 +1152,15 @@ double ternary_virial(double molality_1, double molality_2, std::string componen
   // std::cout<<"Osmole "<< osmolality<< "\n";
     return osmolality;
 }
-void update_concentrations(Spring_Cell* SPcell)
+void update_exterior_concentrations(Spring_Cell* SPcell)
 {
+  // this function passes the exterior concentrations to the Spring_Cell and specifies what solutes are being simulated
   // std::cout<<"Simulation selected"<< SPcell->simulation_selected<<"\n";
   if(SPcell->simulation_selected==1)
   {
     // std::cout<<"Salt molarity: "<< concentration_at_boundary(SPcell->m_my_pCell,0)<<"\n";
-    SPcell->exterior_molarity[0]=concentration_at_boundary(SPcell->m_my_pCell,0);
-    SPcell->exterior_component_molality[0]=molarity_to_molality(SPcell->exterior_molarity[0],"NaCl");
+    SPcell->exterior_molarity[0]=concentration_at_boundary(SPcell->m_my_pCell,0);// read in the averaged exterior molarity in the voxels along the cell boundary
+    SPcell->exterior_component_molality[0]=molarity_to_molality(SPcell->exterior_molarity[0],"NaCl"); //convert the molarity into molality using the best fit polynomial
     
     // std::cout<<"Eg molarity: "<< concentration_at_boundary(SPcell->m_my_pCell,1)<<"\n";
     SPcell->exterior_molarity[1]=concentration_at_boundary(SPcell->m_my_pCell,1);
@@ -1090,29 +1174,27 @@ void update_concentrations(Spring_Cell* SPcell)
   }
   else if(SPcell->simulation_selected==2)
   { 
+    SPcell->exterior_molarity[0]=concentration_at_boundary(SPcell->m_my_pCell,0);
+    SPcell->exterior_component_molality[0]=molarity_to_molality(SPcell->exterior_molarity[0],"NaCl"); 
     SPcell->exterior_molarity[1]=concentration_at_boundary(SPcell->m_my_pCell,1);
-    SPcell->exterior_component_molality[1]=molarity_to_molality(SPcell->exterior_molarity[1],"NaCl"); 
-    SPcell->exterior_molarity[2]=concentration_at_boundary(SPcell->m_my_pCell,2);
-    SPcell->exterior_component_molality[2]=molarity_to_molality(SPcell->exterior_molarity[2],"GLY"); 
-    SPcell->exterior_osmolality=ternary_virial(SPcell->exterior_component_molality[1],SPcell->exterior_component_molality[2],"NaCl","GLY");
+    SPcell->exterior_component_molality[1]=molarity_to_molality(SPcell->exterior_molarity[1],"GLY"); 
+    SPcell->exterior_osmolality=ternary_virial(SPcell->exterior_component_molality[0],SPcell->exterior_component_molality[1],"NaCl","GLY");
   }
   else if(SPcell->simulation_selected==3)
   { 
-    SPcell->exterior_molarity[1]=concentration_at_boundary(SPcell->m_my_pCell,1);
-    SPcell->exterior_component_molality[1]=molarity_to_molality(SPcell->exterior_molarity[1],"NaCl"); 
-    SPcell->exterior_molarity[2]=concentration_at_boundary(SPcell->m_my_pCell,2);
-    SPcell->exterior_component_molality[2]=molarity_to_molality(SPcell->exterior_molarity[2],"NaCl");
-    SPcell->exterior_osmolality=binary_virial((SPcell->exterior_component_molality[1]+SPcell->exterior_component_molality[2]),"NaCl");
+    SPcell->exterior_molarity[0]=concentration_at_boundary(SPcell->m_my_pCell,0);
+    SPcell->exterior_component_molality[0]=molarity_to_molality(SPcell->exterior_molarity[0],"NaCl"); 
+    SPcell->exterior_osmolality=binary_virial(SPcell->exterior_component_molality[0],"NaCl");
   }
   else if(SPcell->simulation_selected==4)
   { 
+    SPcell->exterior_molarity[0]=concentration_at_boundary(SPcell->m_my_pCell,0);
+    SPcell->exterior_component_molality[0]=molarity_to_molality(SPcell->exterior_molarity[0],"NaCl"); 
     SPcell->exterior_molarity[1]=concentration_at_boundary(SPcell->m_my_pCell,1);
-    SPcell->exterior_component_molality[1]=molarity_to_molality(SPcell->exterior_molarity[1],"NaCl"); 
+    SPcell->exterior_component_molality[1]=molarity_to_molality(SPcell->exterior_molarity[1],"EG"); 
     SPcell->exterior_molarity[2]=concentration_at_boundary(SPcell->m_my_pCell,2);
-    SPcell->exterior_component_molality[2]=molarity_to_molality(SPcell->exterior_molarity[2],"EG"); 
-    SPcell->exterior_molarity[3]=concentration_at_boundary(SPcell->m_my_pCell,3);
-    SPcell->exterior_component_molality[3]=molarity_to_molality(SPcell->exterior_molarity[3],"GLY");
-    SPcell->exterior_osmolality=binary_virial(SPcell->exterior_component_molality[1],"NaCl")+ternary_virial(SPcell->exterior_component_molality[2],SPcell->exterior_component_molality[3],"EG","GLY");
+    SPcell->exterior_component_molality[2]=molarity_to_molality(SPcell->exterior_molarity[2],"GLY");
+    SPcell->exterior_osmolality=binary_virial(SPcell->exterior_component_molality[0],"NaCl")+ternary_virial(SPcell->exterior_component_molality[1],SPcell->exterior_component_molality[2],"EG","GLY");
   }
   return;
 }
@@ -1361,7 +1443,7 @@ double moles_in_voxel(int voxel_id, std::string solute_name)
       std::cout<<"MISSING/EXTRA SPECIFIC VOLUME!"<<"\n";
       return moles;
     }
-    //sum+=microenvironment.density_vector(vox)[i]*solute_molar_masses[i];//mole/kg/m^3/kg*10^18um^3/m^3
+    //sum+=microenvironment.density_vector(vox)[i]*solute_molar_masses[vox];//mole/kg/m^3/kg*10^18um^3/m^3
   }
   
 

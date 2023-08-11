@@ -201,7 +201,7 @@ void create_oocyte_cell_type(void)
 	// set custom data values
 	oocyte_cell.custom_data.add_variable("basement_k","unitless",1.0);//oocyte spring constant
 	oocyte_cell.custom_data.add_variable("cell_k","unitless",-1.0);//oocyte spring constant
-   	oocyte_cell.custom_data.add_variable("neighborhood_radius","um",-1.0);//radius beyond cell surface where connections occur
+  oocyte_cell.custom_data.add_variable("neighborhood_radius","um",-1.0);//radius beyond cell surface where connections occur
 	oocyte_cell.custom_data[ "initial_volume" ] = parameters.doubles("oocyte_isotonic_volume");//817283 um^3
 // Lp and Ps are reset to the correct values when encapsulated in spring_cell class
   oocyte_cell.custom_data["Lp"]=-1.0;// //0.0166666666;//0.0135;////um/atm/sec //EG 1/60=.016666667;https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4141568/;
@@ -220,28 +220,23 @@ void create_oocyte_cell_type(void)
 	//oocyte_cell.custom_data["Partial_molar_volume"]=0.0557414;
 	oocyte_cell.custom_data["Vb_fraction"]=.288;
   int simulation_selected=parameters.ints("selected_simulation");
-  if(simulation_selected==1)
-  {
-    std::cout<<"set up function working"<<"\n";
-    oocyte_cell.custom_data["solute_1_permeability"]=0.0166666667;
-  }
 
-	oocyte_cell.custom_data.add_variable("dVw_dt", "unitless", 0.0);
-	oocyte_cell.custom_data.add_variable("prev_dVw_dt", "unitless", 0.0);
+	// oocyte_cell.custom_data.add_variable("dVw_dt", "unitless", 0.0);
+	// oocyte_cell.custom_data.add_variable("prev_dVw_dt", "unitless", 0.0);
+	//
+	//
+	// oocyte_cell.custom_data.add_variable("Toxicity","unitless",0);
+	//
+	// oocyte_cell.custom_data.add_variable("Prev_total_volume","unitless",817283);
+	// oocyte_cell.custom_data.add_variable("test_uptake","unitless",0);
+	// oocyte_cell.custom_data.add_variable("test_current_voxel","unitless",0);
 
-
-	oocyte_cell.custom_data.add_variable("Toxicity","unitless",0);
-
-	oocyte_cell.custom_data.add_variable("Prev_total_volume","unitless",817283);
-	oocyte_cell.custom_data.add_variable("test_uptake","unitless",0);
-	oocyte_cell.custom_data.add_variable("test_current_voxel","unitless",0);
-
-	oocyte_cell.custom_data.add_variable("osmotically_active_water_volume","unitless",580271);//.29*initial_volume
-	oocyte_cell.custom_data.add_variable("prev_osmotically_active_water_volume","unitless",580271);
-	oocyte_cell.custom_data.add_variable("external_GLY_concentration","mole/liter",0.0);
-	oocyte_cell.custom_data.add_variable("external_EG_concentration","mole/liter",0.0);
-	oocyte_cell.custom_data.add_variable("internal_GLY_concentration","mole/liter",0.0);
-	oocyte_cell.custom_data.add_variable("internal_EG_concentration","mole/liter",0.0);
+	//oocyte_cell.custom_data.add_variable("osmotically_active_water_volume","unitless",580271);//.29*initial_volume
+	//oocyte_cell.custom_data.add_variable("prev_osmotically_active_water_volume","unitless",580271);
+	// oocyte_cell.custom_data.add_variable("external_GLY_concentration","mole/liter",0.0);
+	// oocyte_cell.custom_data.add_variable("external_EG_concentration","mole/liter",0.0);
+	// oocyte_cell.custom_data.add_variable("internal_GLY_concentration","mole/liter",0.0);
+	// oocyte_cell.custom_data.add_variable("internal_EG_concentration","mole/liter",0.0);
 	oocyte_cell.custom_data.add_variable("spring_constant","unitless",50.0);
 	oocyte_cell.custom_data.add_variable("max interaction distance","unitless",0.5);
 
@@ -427,22 +422,22 @@ void create_granulosa_cell_type( void )
 
 	//	granulosa_cell.custom_data.add_variable("Water_volume", "unitless", 418.88);
 
-	granulosa_cell.custom_data.add_variable("dVw_dt", "unitless", 0.0);
-	granulosa_cell.custom_data.add_variable("prev_dVw_dt", "unitless", 0.0);
-
-
-	granulosa_cell.custom_data.add_variable("Toxicity","unitless",0);
-	granulosa_cell.custom_data.add_variable("external_concentration_of_solute_2","unitless",0);
-	granulosa_cell.custom_data.add_variable("Prev_total_volume","unitless",523.6);
-	granulosa_cell.custom_data.add_variable("test_uptake","unitless",0);
-	granulosa_cell.custom_data.add_variable("test_current_voxel","unitless",0);
-
-	granulosa_cell.custom_data.add_variable("osmotically_active_water_volume","unitless",418.88);//.29*initial_volume
-	granulosa_cell.custom_data.add_variable("prev_osmotically_active_water_volume","unitless",418.88);
-	granulosa_cell.custom_data.add_variable("external_GLY_concentration","mole/liter",0.0);
-	granulosa_cell.custom_data.add_variable("external_EG_concentration","mole/liter",0.0);
-	granulosa_cell.custom_data.add_variable("internal_GLY_concentration","mole/liter",0.0);
-	granulosa_cell.custom_data.add_variable("internal_EG_concentration","mole/liter",0.0);
+	// granulosa_cell.custom_data.add_variable("dVw_dt", "unitless", 0.0);
+	// granulosa_cell.custom_data.add_variable("prev_dVw_dt", "unitless", 0.0);
+	//
+	//
+	// granulosa_cell.custom_data.add_variable("Toxicity","unitless",0);
+	// granulosa_cell.custom_data.add_variable("external_concentration_of_solute_2","unitless",0);
+	// granulosa_cell.custom_data.add_variable("Prev_total_volume","unitless",523.6);
+	// granulosa_cell.custom_data.add_variable("test_uptake","unitless",0);
+	// granulosa_cell.custom_data.add_variable("test_current_voxel","unitless",0);
+	//
+	// granulosa_cell.custom_data.add_variable("osmotically_active_water_volume","unitless",418.88);//.29*initial_volume
+	// granulosa_cell.custom_data.add_variable("prev_osmotically_active_water_volume","unitless",418.88);
+	// granulosa_cell.custom_data.add_variable("external_GLY_concentration","mole/liter",0.0);
+	// granulosa_cell.custom_data.add_variable("external_EG_concentration","mole/liter",0.0);
+	// granulosa_cell.custom_data.add_variable("internal_GLY_concentration","mole/liter",0.0);
+	// granulosa_cell.custom_data.add_variable("internal_EG_concentration","mole/liter",0.0);
 	granulosa_cell.custom_data.add_variable("spring_constant","unitless",0.5);
 	granulosa_cell.custom_data.add_variable("max interaction distance","unitless",0.5);
 	return;
@@ -525,7 +520,8 @@ default_microenvironment_options.use_oxygen_as_first_field = false;
 	// add the immunostimulatory factor
 	// let's do these in XML later
   static int simulation_selected =parameters.ints( "selected_simulation" ); 
-	microenvironment.add_density( "HM", "dimensionless" );
+  static int selected_PBS_simulation =parameters.ints("selected_PBS_simulation");	
+  microenvironment.add_density( "HM", "dimensionless" );
 	microenvironment.diffusion_coefficients[0] = 510;
 	microenvironment.decay_rates[0] = 0;
 
@@ -540,11 +536,11 @@ default_microenvironment_options.use_oxygen_as_first_field = false;
     // default_microenvironment_options.Dirichlet_activation_vector[2]=false;
     // default_microenvironment_options.Dirichlet_xmax_values[2]=3.4;
 	  //solute_loading(1.11,2.22,3.33,4.44,5.55,6.66);
-    default_microenvironment_options.initial_condition_vector[0]=0.150;
-    default_microenvironment_options.Dirichlet_condition_vector[0] = 0.150;
+    default_microenvironment_options.initial_condition_vector[0]=parameters.doubles("initial_HM_molarity");
+    default_microenvironment_options.Dirichlet_condition_vector[0] = parameters.doubles("initial_HM_molarity");
     default_microenvironment_options.Dirichlet_activation_vector[0]=true;	
     default_microenvironment_options.initial_condition_vector[1]=0.00;
-    default_microenvironment_options.Dirichlet_condition_vector[1] = 1.10;//1.00;//6.66;
+    default_microenvironment_options.Dirichlet_condition_vector[1] = parameters.doubles("internal_EG_concentration");//1.00;//6.66;
     default_microenvironment_options.Dirichlet_activation_vector[1]=true;	
   }
   else if(simulation_selected==2)
@@ -554,16 +550,46 @@ default_microenvironment_options.use_oxygen_as_first_field = false;
     microenvironment.add_density( "GLY", "dimensionless" );
 	  microenvironment.diffusion_coefficients[1] = 530;
 	  microenvironment.decay_rates[1] = 0;
+    default_microenvironment_options.initial_condition_vector[1]=0.00;
+    default_microenvironment_options.Dirichlet_condition_vector[1] = parameters.doubles("internal_GLY_concentration");//1.00;//6.66;
+    default_microenvironment_options.Dirichlet_activation_vector[1]=true;	
   
 	//solute_loading(1.11,2.22,3.33,4.44,5.55,6.66);
   }
   else if(simulation_selected==3)
   {
- 
+    //select which PBS simulation, default is 1x
     std::cout<<"running PBS loading"<<"\n";
     microenvironment.add_density( "PBS", "dimensionless" );
-    microenvironment.diffusion_coefficients[2] = 510;
-    microenvironment.decay_rates[2] = 0;
+    microenvironment.diffusion_coefficients[0] = 510;
+    microenvironment.decay_rates[0] = 0;
+    if (selected_PBS_simulation==0) {
+      //0.5x PBS simulation
+      default_microenvironment_options.initial_condition_vector[0]=parameters.doubles("initial_HM_molarity");
+      default_microenvironment_options.Dirichlet_condition_vector[0] = parameters.doubles("initial_05xPBS_molarity");
+      default_microenvironment_options.Dirichlet_activation_vector[0]=true;	
+      
+    }
+    else if (selected_PBS_simulation==2) {
+      default_microenvironment_options.initial_condition_vector[0]=parameters.doubles("initial_HM_molarity");
+      default_microenvironment_options.Dirichlet_condition_vector[0] = parameters.doubles("initial_2xPBS_molarity");
+      default_microenvironment_options.Dirichlet_activation_vector[0]=true;	
+      //2x PBS simulation
+    
+    }
+    else if (selected_PBS_simulation==5) {
+      //5x PBS simulation 
+      default_microenvironment_options.initial_condition_vector[0]=parameters.doubles("initial_HM_molarity");
+      default_microenvironment_options.Dirichlet_condition_vector[0] = parameters.doubles("initial_5xPBS_molarity");
+      default_microenvironment_options.Dirichlet_activation_vector[0]=true;	
+    }
+    else{
+      //1x PBS simulation 
+      default_microenvironment_options.initial_condition_vector[0]=parameters.doubles("initial_HM_molarity");
+      default_microenvironment_options.Dirichlet_condition_vector[0] = parameters.doubles("initial_1xPBS_molarity");
+      default_microenvironment_options.Dirichlet_activation_vector[0]=true;	
+
+    }
      
 	//solute_loading(1.11,2.22,3.33,4.44,5.55,6.66);
   }
@@ -571,30 +597,30 @@ default_microenvironment_options.use_oxygen_as_first_field = false;
   { 
     std::cout<<"running EG & GLY loading"<<"\n";
     microenvironment.add_density( "EG", "dimensionless" );
+	  microenvironment.diffusion_coefficients[1] = 530;
+	  microenvironment.decay_rates[1] = 0;
+    microenvironment.add_density( "GLY", "dimensionless" );
 	  microenvironment.diffusion_coefficients[2] = 530;
 	  microenvironment.decay_rates[2] = 0;
-    microenvironment.add_density( "GLY", "dimensionless" );
-	  microenvironment.diffusion_coefficients[3] = 530;
-	  microenvironment.decay_rates[3] = 0;
   }
   else
   {
     std::cout<<"running all solutes"<<"\n";
     microenvironment.add_density( "EG", "dimensionless" );
-	  microenvironment.diffusion_coefficients[2] = 530;
-	  microenvironment.decay_rates[2] = 0;
+	  microenvironment.diffusion_coefficients[1] = 530;
+	  microenvironment.decay_rates[1] = 0;
 	
     microenvironment.add_density( "GLY", "dimensionless" );
-    microenvironment.diffusion_coefficients[3] = 530;//530; //TODO: check about the diffusivity of this value
-    microenvironment.decay_rates[3] = 0;
+    microenvironment.diffusion_coefficients[2] = 530;//530; //TODO: check about the diffusivity of this value
+    microenvironment.decay_rates[2] = 0;
     
     microenvironment.add_density( "PBS", "dimensionless" );
-    microenvironment.diffusion_coefficients[4] = 510;
-    microenvironment.decay_rates[4] = 0;
+    microenvironment.diffusion_coefficients[3] = 510;
+    microenvironment.decay_rates[3] = 0;
 
     microenvironment.add_density( "SUC", "dimensionless" );
-    microenvironment.diffusion_coefficients[5] = 1075;
-    microenvironment.decay_rates[5] = 0;
+    microenvironment.diffusion_coefficients[4] = 1075;
+    microenvironment.decay_rates[4] = 0;
   }
 	// do not let BioFVM use oxygen as the default
 

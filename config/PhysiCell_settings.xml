@@ -242,10 +242,10 @@
       <initial_GLY_mixed_molarity type="double" units="fmol/um^3" description="">1.611</initial_GLY_mixed_molarity>
       <initial_HM_molarity type="double" units="fmol/um^3" description="">0.151</initial_HM_molarity>
       <!-- initial PBS molarities are less the HM molarity since both are treated as NaCl -->
-      <initial_1xPBS_molarity type="double" units="fmol/um^3" description="">0.111</initial_1xPBS_molarity>
-      <initial_2xPBS_molarity type="double" units="fmol/um^3" description="">0.191</initial_2xPBS_molarity>
-      <initial_5xPBS_molarity type="double" units="fmol/um^3" description="">0.376</initial_5xPBS_molarity>
-      <initial_05xPBS_molarity type="double" units="fmol/um^3" description="">0.911</initial_05xPBS_molarity>
+      <initial_1xPBS_molarity type="double" units="fmol/um^3" description="">0.191</initial_1xPBS_molarity>
+      <initial_2xPBS_molarity type="double" units="fmol/um^3" description="">0.376</initial_2xPBS_molarity>
+      <initial_5xPBS_molarity type="double" units="fmol/um^3" description="">0.911</initial_5xPBS_molarity>
+      <initial_05xPBS_molarity type="double" units="fmol/um^3" description="">0.111</initial_05xPBS_molarity>
     </user_parameters>
   <options>
       <!-- other options -->

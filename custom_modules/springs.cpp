@@ -56,7 +56,7 @@ void Spring_Cell::initialize()
   //initializing stuff after constructor is called
   return;
 }
-/* IMPORTANT NOTE: solute vectors are all of the form {0,HM,EG,GLY,PBS}
+/* IMPORTANT NOTE: solute vectors are all of the form {HM,EG,GLY,PBS}
  * temp is currently fixed
  * cryo state variables are part of spring cell, a cell type encapsulating class
  * virial equation is used for ternary solutions and binary solutions, quaternary
@@ -165,7 +165,7 @@ void Spring_Cell::remove_spring(Spring_Cell* other_pSCell)
 }
 void Spring_Cell::set_2p_initial_conditions()
 {
-  output_cell_and_voxels(get_exterior_voxels(this->m_my_pCell), this->m_my_pCell);
+  // output_cell_and_voxels(get_exterior_voxels(this->m_my_pCell), this->m_my_pCell);
   // 1 mol/L = 1 fmol/um^3 
   // double HM_density=1.0045; //NaCl density g/cm^3 extrapolated from CRC 
   // double solvent_volume= this->m_my_pCell->phenotype.volume.total-this->solid_volume;
@@ -220,20 +220,18 @@ void Spring_Cell::set_2p_initial_conditions()
   {//PBS
     if(this->m_my_pCell->type==1)
     { 
-      this->Ps[1]=parameters.doubles("oocyte_Ps_NaCl");
+      this->Ps[0]=parameters.doubles("oocyte_Ps_NaCl");
       this->Lp=parameters.doubles("oocyte_Lp_NaCl");
     }
     else
     {
-      this->Ps[1]=parameters.doubles("gran_Ps_NaCl");
+      this->Ps[0]=parameters.doubles("gran_Ps_NaCl");
       this->Lp=parameters.doubles("gran_Lp_NaCl");
     }
-    this->solute_moles[1]=0;
-      this->interior_component_molality[0]=molarity_to_molality(this->interior_molarity[0], "NaCl");
-      this->interior_component_molality[1]=molarity_to_molality(this->interior_molarity[1], "NaCl");
-      double vir=ternary_virial(this->interior_component_molality[0],this->interior_component_molality[1],"NaCl","NaCl"); 
-      std::cout<<"Initial OSMOLALITY: "<< vir<<"\n";   
-      this->interior_osmolality=ternary_virial(this->interior_component_molality[0],this->interior_component_molality[1],"NaCl","NaCl");
+    this->interior_component_molality[0]=molarity_to_molality(this->interior_molarity[0], "NaCl");
+    double vir=binary_virial(this->interior_component_molality[0],"NaCl"); 
+    std::cout<<"Initial OSMOLALITY: "<< vir<<"\n";   
+    this->interior_osmolality=binary_virial(this->interior_component_molality[0],"NaCl");
   }
   else if(this->simulation_selected==4)
   {//EG & GLY
@@ -357,47 +355,30 @@ void Spring_Cell::dN_molarity()
   // std::cout<<"interior_molarity 1: "<<this->interior_molarity[1]<<"\n";
     return;
 }
-void Spring_Cell::two_p_forward_step()
+void Spring_Cell::two_p_forward_step( double dt)
 {
-  // std::cout<<"TEST RUN FLAG!"<<"\n";
-  if (PhysiCell_globals.current_time<=0.01) {
-  // std::cout<<"Second FLAG!"<<"\n";
-    this->next_water_volume=this->water_volume+(this->dVw*0.01);//forward_euler
+  if (PhysiCell_globals.current_time<=dt) {
+    this->next_water_volume=this->water_volume+(this->dVw*dt);//forward_euler
     for (size_t i = 0; i < (dN).size(); i++)
     {
-      this->next_solute_moles[i]=this->solute_moles[i]+(0.01*this->dN[i]);//forward_euler
+      this->next_solute_moles[i]=this->solute_moles[i]+(dt*this->dN[i]);//forward_euler
       // std::cout<<"current moles: "<< this->solute_moles[1]<<"\n";
       // std::cout<<"osmotic volume: "<< this->m_my_pCell->phenotype.volume.total-this->solid_volume<<"\n";
       // std::cout<<"interior concentration: "<< (this->solute_moles[0]+this->solute_moles[1])/(this->m_my_pCell->phenotype.volume.total-this->solid_volume)<<"\n";
       // std::cout<<"sum of molarity:  "<<this->interior_molarity[0]+this->interior_molarity[1]<<"\n"; 
       // std::cout<<"interior osmolality: "<< this->interior_osmolality<<"\n"; 
-      this->solute_uptake[i]=this->next_solute_moles[i]-this->solute_moles[i];//forward_euler
-      this->solute_moles[i]=this->next_solute_moles[i];//update for next step
+      this->solute_uptake[i]=this->next_solute_moles[i]-this->solute_moles[i];//used to pass uptake to voxel environment
+      this->solute_moles[i]=this->next_solute_moles[i];//update moles for next step
       // std::cout<<"uptake: "<< this->solute_uptake[i]<<"\n";
     }
   }
   else {
-    
-  
-    this->next_water_volume=this->water_volume+(this->dVw*0.01);//forward_euler
-  // std::cout<<"Third FLAG!"<<"\n";
-  // this->next_water_volume=this->water_volume+(0.01/2)*((3*this->dVw)-(this->previous_dVw));
+    this->next_water_volume=this->water_volume+(dt/2)*((3*this->dVw)-(this->previous_dVw));
     for (size_t i = 0; i < (dN).size(); i++)
     {
-    
-      this->next_solute_moles[i]=this->solute_moles[i]+(0.01*this->dN[i]);//forward_euler
-      // this->next_solute_moles[i]=this->solute_moles[i]+(0.01/2)*((3*this->dN[i])-(this->previous_dN[i]));
-      // std::cout<<"current moles: "<< this->solute_moles[1]<<"\n";
-      // std::cout<<"osmotic volume: "<< this->m_my_pCell->phenotype.volume.total-this->solid_volume<<"\n";
-      // std::cout<<"interior concentration: "<< (this->solute_moles[0]+this->solute_moles[1])/(this->m_my_pCell->phenotype.volume.total-this->solid_volume)<<"\n";
-      // std::cout<<"sum of molarity:  "<<this->interior_molarity[0]+this->interior_molarity[1]<<"\n"; 
-      // std::cout<<"interior osmolality: "<< this->interior_osmolality<<"\n"; 
-      // std::cout<<"exterior osmolality"<< this->exterior_osmolality<<"\n"; 
-      //std::cout<<"current moles: "<< this->solute_moles[1]<<"\n";
-      // std::cout<<"next moles: "<< this->next_solute_moles[1]<<"\n";
-      this->solute_uptake[i]=this->next_solute_moles[i]-this->solute_moles[i];//forward_euler
+      this->next_solute_moles[i]=this->solute_moles[i]+(dt/2)*((3*this->dN[i])-(this->previous_dN[i]));
+      this->solute_uptake[i]=this->next_solute_moles[i]-this->solute_moles[i];
       this->solute_moles[i]=this->next_solute_moles[i];//update for next step
-      // std::cout<<"MOLES: "<< this->solute_moles[i]<<"\n";
     }
   }
   this->water_uptake=this->next_water_volume-this->water_volume;

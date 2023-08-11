@@ -112,7 +112,7 @@ public:
     //for mixture use virial for GLY and EG but add HM
   void dN_molarity(); 
   void dVw_Osmolality();
-  void two_p_forward_step();
+  void two_p_forward_step(double dt);
     // void two_parameter_update
     // void cell_volume_update
     // void compute_internal_component_molarity //moles/(V_total-V_b)
