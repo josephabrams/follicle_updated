@@ -9,17 +9,17 @@
 		<dx>10</dx>
 		<dy>10</dy>
 		<dz>10</dz>
-		<use_2D>true</use_2D>
+		<use_2D>false</use_2D>
 	</domain>
 	
 	<overall>
-		<max_time units="min">300</max_time> 
+		<max_time units="sec">300</max_time> 
 		<time_units>min</time_units>
 		<space_units>micron</space_units>
 	
-		<dt_diffusion units="min">0.01</dt_diffusion>
-		<dt_mechanics units="min">0.01</dt_mechanics>
-		<dt_phenotype units="min">0.01</dt_phenotype>	
+		<dt_diffusion units="sec">0.01</dt_diffusion>
+		<dt_mechanics units="sec">0.01</dt_mechanics>
+		<dt_phenotype units="sec">0.01</dt_phenotype>	
 	</overall>
 	
 	<parallel>
@@ -30,12 +30,12 @@
 		<folder>output</folder>  
 
 		<full_data>
-			<interval units="min">50</interval>
-			<enable>true</enable>
+			<interval units="sec">.1</interval>
+			<enable>false</enable>
 		</full_data>
 		
 		<SVG>
-			<interval units="min">5</interval>
+			<interval units="sec">.5</interval>
 			<enable>true</enable>
 		</SVG>
 		
@@ -54,7 +54,7 @@
 			<calculate_gradients>true</calculate_gradients>
 			<track_internalized_substrates_in_each_agent>false</track_internalized_substrates_in_each_agent>
  
-			<initial_condition type="matlab" enabled="true">
+			<initial_condition type="matlab" enabled="false">
 				<filename>./config/initial.mat</filename>
 			</initial_condition>
 			 
@@ -106,7 +106,7 @@
           </death>
 
           <volume>
-            <total units="micron^3">2494</total>
+            <total units="micron^3">100</total>
             <fluid_fraction units="dimensionless">0.75</fluid_fraction>
             <nuclear units="micron^3">540</nuclear>
             <fluid_change_rate units="1/min">0.05</fluid_change_rate>
@@ -206,7 +206,7 @@
 
 <user_parameters>
   <random_seed type="int" units="dimensionless" description="">0</random_seed>
-<!-- selected simulation allows simulations to be switched between EG, GLY, PBS and EG with GLY, using 1,2,3 and 4 respectively-->
+<!-- selected simulation allows simulations to be switched between EG, GLY, PBS and EG with GLY, using 1,2,3 and 4 respectively and 5,6,7 for karlsson EG,DMSO,PROH -->
   <selected_simulation type="int" units="dimensionless" description="">1</selected_simulation>
 <!-- selected_PBS_concentration allows PBS simulations to be switched between 0.5xPBS, 1xPBS, 2xPBS and 5xPBS using 0,1,2 and 5 respectively-->
   <selected_PBS_simulation type="int" units="xPBS" description="">1</selected_PBS_simulation>
@@ -224,14 +224,14 @@
       <oocyte_Lp_EG type="double" units="um/sec/atm" description="Karlsson et al">0.016667</oocyte_Lp_EG>
       <oocyte_Lp_GLY type="double" units="um/sec/atm" description="">0.0053</oocyte_Lp_GLY>
       <oocyte_Lp_PBS type="double" units="um/sec/atm" description="">0.0135</oocyte_Lp_PBS>
-      <gran_Lp_EG type="double" units="um/sec/atm" description="Karlsson et al">0.00288776</gran_Lp_EG>
-      <gran_Lp_GLY type="double" units="um/sec/atm" description="">0.00288776</gran_Lp_GLY>
+      <gran_Lp_EG type="double" units="um/sec/atm" description="Karlsson et al">0.00231</gran_Lp_EG>
+      <gran_Lp_GLY type="double" units="um/sec/atm" description="">0.00267</gran_Lp_GLY>
       <gran_Lp_PBS type="double" units="um/sec/atm" description="">0.0114035</gran_Lp_PBS>
       <oocyte_Ps_EG type="double" units="um/sec" description="Karlsson et al">0.12</oocyte_Ps_EG>
       <oocyte_Ps_GLY type="double" units="um/sec" description="">0.107</oocyte_Ps_GLY>
       <oocyte_Ps_NaCl type="double" units="um/sec" description="">0.0</oocyte_Ps_NaCl>
-      <gran_Ps_EG type="double" units="um/sec" description="">0.0345</gran_Ps_EG>
-      <gran_Ps_GLY type="double" units="" description="um/sec">0.0345</gran_Ps_GLY>
+      <gran_Ps_EG type="double" units="um/sec" description="">0.0276</gran_Ps_EG>
+      <gran_Ps_GLY type="double" units="" description="um/sec">0.00294</gran_Ps_GLY>
       <gran_Ps_NaCl type="double" units="" description="um/sec">0.0</gran_Ps_NaCl>
       <oocyte_Lp_EG_and_GLY type="double" units="um/sec/atm" description="">0.15</oocyte_Lp_EG_and_GLY>
       <gran_Lp_EG_and_GLY type="double" units="um/sec/atm" description="">0.0345</gran_Lp_EG_and_GLY>
@@ -246,8 +246,14 @@
       <initial_2xPBS_molarity type="double" units="fmol/um^3" description="">0.376</initial_2xPBS_molarity>
       <initial_5xPBS_molarity type="double" units="fmol/um^3" description="">0.911</initial_5xPBS_molarity>
       <initial_05xPBS_molarity type="double" units="fmol/um^3" description="">0.111</initial_05xPBS_molarity>
-      <initial_EG_Karlsson_molarity type="double" units="fmol/um^3" description="">1.0</initial_EG_Karlsson_molarity>
-      
+      <initial_EG_Karlsson_molarity type="double" units="fmol/um^3" description="">1.1</initial_EG_Karlsson_molarity>
+      <initial_PBS_Karlsson_molarity type="double" units="fmol/um^3" description="">0.756</initial_PBS_Karlsson_molarity>
+      <initial_DMSO_Karlsson_molarity type="double" units="fmol/um^3" description="">1.1</initial_DMSO_Karlsson_molarity>
+      <initial_PROH_Karlsson_molarity type="double" units="fmol/um^3" description="">1.0</initial_PROH_Karlsson_molarity>
+      <oocyte_Lp_Karlsson_DMSO type="double" units="um/sec/atm" description="">0.028</oocyte_Lp_Karlsson_DMSO>
+      <oocyte_Lp_Karlsson_PROH type="double" units="um/sec/atm" description=""> 0.012</oocyte_Lp_Karlsson_PROH>
+      <oocyte_Ps_Karlsson_DMSO type="double" units="um/sec" description=""> 0.15</oocyte_Ps_Karlsson_DMSO>
+      <oocyte_Ps_Karlsson_PROH type="double" units="um/sec" description="">0.31 </oocyte_Ps_Karlsson_PROH>
     </user_parameters>
   <options>
       <!-- other options -->

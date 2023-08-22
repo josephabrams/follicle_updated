@@ -101,6 +101,7 @@ public:
   std::vector <double> solute_uptake;
   double water_uptake;
   std::vector <int> uptake_voxels;
+  int initial_number_of_connections;
 //   //2p methods
 //     Cryo_State_Variables(int solute_num);
 //     void get_external_molarity(int component, Cell* pCell);//sample microenvironment

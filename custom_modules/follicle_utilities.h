@@ -42,7 +42,7 @@ std::vector<Cell *> cells_in_me (Cell *pCell);
 void find_basement_membrane_voxels (std::vector<double> center_of_sphere, std::vector<double> radius_of_sphere);
 
 std::vector<double> Hookes_law_force (std::vector<double> direction, double rest_length, double current_length, double spring_constant);
-
+void output_all_voxels_concentrations();
 double Adams_Bashforth_ODE_2nd_Order (double y_value, double prev_df_dt, double df_dt, double step_size);
 std::vector<double> Adams_Bashforth_ODE_2nd_Order(std::vector<double> Y_values, std::vector<double> prev_df_dts, std::vector<double> df_dts, double step_size);
 double Forward_Euler (double f_value, double step_size, double df_dt);
@@ -72,7 +72,7 @@ void initialize_spring_cells();
 void initialize_basement_membrane_connections( std::vector <double> basement_membrane_center, double basement_membrane_radius);
 bool is_in_voxel(Cell* pCell, Voxel* pVoxel);
 bool is_in_voxel(Cell* pCell, int voxel_index);
-void basement_membrane_mechanics(Spring_Cell* SpCell, double basement_membrane_radius, std::vector <double> basement_membrane_center);
+void basement_membrane_mechanics(Spring_Cell* SpCell, double basement_membrane_radius, std::vector <double> basement_membrane_center, double dt);
 void basement_membrane_mechanics(Cell* pCell, double basement_membrane_radius);
 std::vector <int> spherical_bounding_box(std::vector <double> center_point, double radius);
 void print_voxels_for_quick_plotting(Cell* pCell,std::vector <int> bounding_voxels, std::vector <int> sub_section);

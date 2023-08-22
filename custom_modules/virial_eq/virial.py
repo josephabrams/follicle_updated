@@ -391,5 +391,11 @@ def main():
     print("For PBS solutions the intial molarities are ", round(PBS_05x_molarity,3), " mol/L for 0.5x, ",round(PBS_1x_molarity,3))
     print(" mol/L for 1x, ", round(PBS_2x_molarity,3), " mol/L for 2x, and ", round(PBS_5x_molarity,3), " mol/L for 5x PBS." )
     print(" Those are all the initial molarities.")
+    print("From Karlsson et al. the PBS mOsm was 1339")
+    pbs_molality=grid_search_binary(virial_dictionary["NaCl"]["kdiss"],1.339,virial_dictionary["NaCl"]["B"],virial_dictionary["NaCl"]["C"], 1.339/2, 1.339*1.5)
+    print("PBS molality from Karlsson et al. is: ", pbs_molality)
+    pbs_molarity=NaCl_molality_to_molarity(pbs_molality)
+    print("PBS Molarity from Karlsson et al. is: ", pbs_molarity)
+    print("END OF FILE")
 if __name__ == '__main__':
     main()

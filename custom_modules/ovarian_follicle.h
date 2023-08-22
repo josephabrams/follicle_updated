@@ -18,10 +18,14 @@ using namespace PhysiCell;
 extern Cell_Definition oocyte_cell;
 extern Cell_Definition granulosa_cell;
 extern std::string output_filenames;
+extern double k_granulosa;
+extern double k_oocyte;
+extern double k_basement;
 std::vector<std::string> my_coloring_function( Cell* pCell );
 std::vector<std::string> follicle_coloring_function( Cell* pCell );
 ////////////////////////////////Custom Cell Construction/////////////////////////////////////////////////////////////////////////
 
+void spring_cell_functions(Cell* pCell, Phenotype& phenotype, double dt);
 
 void create_cell_types( void );
 void create_oocyte_cell_type(void);
