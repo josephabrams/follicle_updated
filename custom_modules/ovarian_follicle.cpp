@@ -11,9 +11,9 @@ Cell_Definition oocyte_cell;
 Cell_Definition granulosa_cell;
 std::string output_filename;
 
-double k_granulosa=0.0;
-double k_oocyte=0.0;
-double k_basement=0.0;
+double k_granulosa=0.1;
+double k_oocyte=0.1;
+double k_basement=0.1;
 std::vector<std::string> my_coloring_function( Cell* pCell )
 { return paint_by_number_cell_coloring(pCell); }
 std::vector<std::string> follicle_coloring_function( Cell* pCell )//function for coloring cells in SVG output
@@ -75,7 +75,7 @@ void spring_cell_functions(Cell* pCell, Phenotype& phenotype, double dt)
   //sum velocities from non_connected_neighbor_pressure
   //sum velocities from intercellular connections
   //sum velocities from basement membrane 
-  // update_all_forces(pCell,dt,pCell->custom_data["spring_constant"]);
+  update_all_forces(pCell,dt,pCell->custom_data["spring_constant"]);
   
   // if oocyte break connections that are past the max breakage distance
   if(pCell->type==1){
@@ -152,7 +152,7 @@ void create_cell_types( void )
   // cell_defaults.custom_data.add_variable( "attachment rate" , "1/min" ,0 ); // how long it wants to wander before attaching
   // cell_defaults.custom_data.add_variable("osmotically_active_water_volume","unitless",0.0);
   // cell_defaults.custom_data.add_variable("prev_osmotically_active_water_volume","unitless",0.0);
-  // cell_defaults.custom_data.add_variable("max interaction distance","unitless",0.5);
+  cell_defaults.custom_data.add_variable("max_interaction_distance","unitless",0.5);
   //cell_defaults.custom_data.add_variable("total_internal_concentration","unitless",0.0);
   //cell_defaults.custom_data.add_variable("total_external_concentration", "unitless", 0.0);
   // cell_defaults.custom_data.add_variable("dVw_dt", "unitless", 0.0);
@@ -190,7 +190,7 @@ void create_oocyte_cell_type(void)
 	oocyte_cell.functions.update_velocity = oocyte_velocity_rule;
 	// set custom data values
 	oocyte_cell.custom_data.add_variable("cell_k","unitless",k_oocyte);//oocyte spring constant
-  oocyte_cell.custom_data.add_variable("neighborhood_radius","um",10);//radius beyond cell surface where connections occur
+  oocyte_cell.custom_data.add_variable("neighborhood_radius","um",15);//radius beyond cell surface where connections occur
   oocyte_cell.custom_data.add_variable("allowed_overlap","um",2);//radius beyond cell surface where connections occur
 	oocyte_cell.custom_data[ "initial_volume" ] = parameters.doubles("oocyte_isotonic_volume");//817283 um^3
 	/*
@@ -206,6 +206,7 @@ void create_oocyte_cell_type(void)
   oocyte_cell.custom_data.add_variable("basement_k","unitless",k_basement);
 	oocyte_cell.custom_data.add_variable("spring_constant","N/m",k_oocyte);
 	oocyte_cell.custom_data.add_variable("max_breakage_distance","um",10);
+  oocyte_cell.custom_data.add_variable("max_interaction_distance","unitless",15);
 	return;
 }
 
@@ -224,9 +225,9 @@ void oocyte_phenotype_rule( Cell* pCell, Phenotype& phenotype, double dt )
     SPcell->initial_number_of_connections=SPcell->m_springs.size();
   }
   int thread_id=omp_get_thread_num();
-  two_parameter_single_step(pCell,phenotype, dt);
+  // two_parameter_single_step(pCell,phenotype, dt);
  //  // std::cout<<" FORCE PARAM: "<< k_oocyte<<", "<<k_granulosa<<", "<<k_basement<<"\n";
-  // spring_cell_functions(pCell,phenotype,dt);	
+  spring_cell_functions(pCell,phenotype,dt);	
   std::ofstream ofs;
 	ofs.open ("./output/2p_Test_oocyte.csv", std::ofstream::out | std::ofstream::app);
 	ofs << PhysiCell_globals.current_time<<", "<<pCell->index<<", "<<SPcell->m_my_pCell->index<<", "<< pCell<<", "<< pCell->phenotype.volume.total<<", "<<SPcell->exterior_osmolality<<", "<<SPcell->interior_osmolality <<", "<<SPcell->exterior_molarity[1]<<", "<<SPcell->interior_molarity[1]<<", "<<PhysiCell_settings.omp_num_threads<<", "<< thread_id<<"\n";
@@ -324,6 +325,7 @@ void create_granulosa_cell_type( void )
 	granulosa_cell.custom_data.add_variable("spring_constant","N/m",k_granulosa);
   granulosa_cell.custom_data.add_variable("allowed_overlap","um",2);//radius beyond cell surface where connections occur
   granulosa_cell.custom_data.add_variable("max_breakage_distance","um",10);
+  granulosa_cell.custom_data.add_variable("max_interaction_distance","unitless",10);
 	return;
 }
 void granulosa_cell_rule( Cell* pCell, Phenotype& phenotype, double dt )
@@ -336,9 +338,9 @@ void granulosa_phenotype_rule( Cell* pCell, Phenotype& phenotype, double dt )
 {
   Spring_Cell* SPcell=spring_cell_by_pCell_index[pCell->index];
   int thread_id=omp_get_thread_num();
-  two_parameter_single_step(pCell,phenotype, dt);
+  // two_parameter_single_step(pCell,phenotype, dt);
  //  // std::cout<<" FORCE PARAM: "<< k_oocyte<<", "<<k_granulosa<<", "<<k_basement<<"\n";
-  // spring_cell_functions(pCell,phenotype,dt);
+  spring_cell_functions(pCell,phenotype,dt);
   // if(count%100==0){
   //   std::ofstream ofs;
   //   ofs.open ("./output/2p_Test_granulosa.csv", std::ofstream::out | std::ofstream::app);

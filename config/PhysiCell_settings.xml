@@ -17,9 +17,9 @@
 		<time_units>min</time_units>
 		<space_units>micron</space_units>
 	
-		<dt_diffusion units="sec">0.01</dt_diffusion>
-		<dt_mechanics units="sec">0.01</dt_mechanics>
-		<dt_phenotype units="sec">0.01</dt_phenotype>	
+		<dt_diffusion units="sec">0.1</dt_diffusion>
+		<dt_mechanics units="sec">0.1</dt_mechanics>
+		<dt_phenotype units="sec">0.1</dt_phenotype>	
 	</overall>
 	
 	<parallel>
