@@ -21,22 +21,8 @@ jobs:
         update: true
         install: base-devel flex bison gcc make diffutils mingw-w64-x86_64-toolchain mingw-w64-x86_64-ca-certificates
     
-    - name: Build Virus Macrophage project
+    - name: ovarian_follicle
       run: |
-        make virus-macrophage-sample
-        make
-        
-    - name: Run Virus Macrophage cell lines project
-      run: |
-        .\\virus-sample.exe
-        
-    - name: Build PhysiBoSS cell lines project
-      run: |
-        make reset
-        make physiboss-cell-lines-sample
-        make clean
         make 
-      
-    - name: Run PhysiBoSS cell lines project
-      run: |
-        .\\PhysiBoSS_Cell_Lines.exe
+        
+    
