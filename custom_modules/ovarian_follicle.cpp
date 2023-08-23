@@ -75,7 +75,7 @@ void spring_cell_functions(Cell* pCell, Phenotype& phenotype, double dt)
   //sum velocities from non_connected_neighbor_pressure
   //sum velocities from intercellular connections
   //sum velocities from basement membrane 
-  update_all_forces(pCell,dt,pCell->custom_data["spring_constant"]);
+  // update_all_forces(pCell,dt,pCell->custom_data["spring_constant"]);
   
   // if oocyte break connections that are past the max breakage distance
   if(pCell->type==1){
@@ -193,9 +193,6 @@ void create_oocyte_cell_type(void)
   oocyte_cell.custom_data.add_variable("neighborhood_radius","um",10);//radius beyond cell surface where connections occur
   oocyte_cell.custom_data.add_variable("allowed_overlap","um",2);//radius beyond cell surface where connections occur
 	oocyte_cell.custom_data[ "initial_volume" ] = parameters.doubles("oocyte_isotonic_volume");//817283 um^3
-  // Lp and Ps are reset to the correct values when encapsulated in spring_cell class
-  // oocyte_cell.custom_data["Lp"]=-1.0;// //0.0166666666;//0.0135;////um/atm/sec //EG 1/60=.016666667;https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4141568/;
-	// oocyte_cell.custom_data["Ps"]=-1.0;//Ps_oocyte; //0.0; //.12;//0.0;um/sec
 	/*
 		DMSO_Lp 1.68 Immature 1.01 Mature
 		DMSO_Ps .15 immature .24 mature
@@ -205,25 +202,8 @@ void create_oocyte_cell_type(void)
 	oocyte_cell.custom_data["surface_area"]=42273.3;//43411.1;
 	oocyte_cell.custom_data["R"]= R;
 	oocyte_cell.custom_data["Temperature"]= 293.15;// uh I should get all the temperature stuff lined up
-	// oocyte_cell.custom_data["initial_water_volume"]=817283;
-	//oocyte_cell.custom_data["Partial_molar_volume"]=0.0557414;
 	oocyte_cell.custom_data["Vb_fraction"]=.288;
- // basemen_k set for oocyte but should never actually come up 
   oocyte_cell.custom_data.add_variable("basement_k","unitless",k_basement);
-
-  // int simulation_selected=parameters.ints("selected_simulation");
-	// oocyte_cell.custom_data.add_variable("dVw_dt", "unitless", 0.0);
-	// oocyte_cell.custom_data.add_variable("prev_dVw_dt", "unitless", 0.0);
-	// oocyte_cell.custom_data.add_variable("Toxicity","unitless",0);
-	// oocyte_cell.custom_data.add_variable("Prev_total_volume","unitless",817283);
-	// oocyte_cell.custom_data.add_variable("test_uptake","unitless",0);
-	// oocyte_cell.custom_data.add_variable("test_current_voxel","unitless",0);
-	//oocyte_cell.custom_data.add_variable("osmotically_active_water_volume","unitless",580271);//.29*initial_volume
-	//oocyte_cell.custom_data.add_variable("prev_osmotically_active_water_volume","unitless",580271);
-	// oocyte_cell.custom_data.add_variable("external_GLY_concentration","mole/liter",0.0);
-	// oocyte_cell.custom_data.add_variable("external_EG_concentration","mole/liter",0.0);
-	// oocyte_cell.custom_data.add_variable("internal_GLY_concentration","mole/liter",0.0);
-	// oocyte_cell.custom_data.add_variable("internal_EG_concentration","mole/liter",0.0);
 	oocyte_cell.custom_data.add_variable("spring_constant","N/m",k_oocyte);
 	oocyte_cell.custom_data.add_variable("max_breakage_distance","um",10);
 	return;
@@ -238,22 +218,21 @@ void oocyte_cell_rule( Cell* pCell, Phenotype& phenotype, double dt )
 }
 void oocyte_phenotype_rule( Cell* pCell, Phenotype& phenotype, double dt )
 {
-  // std::cout<<"VOLUME:"<<pCell->phenotype.volume.total<<"\n";
+    // std::cout<<"VOLUME:"<<pCell->phenotype.volume.total<<"\n";
   Spring_Cell* SPcell=spring_cell_by_pCell_index[pCell->index];
   if(PhysiCell_globals.current_time<dt){
     SPcell->initial_number_of_connections=SPcell->m_springs.size();
   }
   int thread_id=omp_get_thread_num();
- // two_parameter_single_step(pCell,phenotype, dt);
-  // std::cout<<" FORCE PARAM: "<< k_oocyte<<", "<<k_granulosa<<", "<<k_basement<<"\n";
-  spring_cell_functions(pCell,phenotype,dt);	
+  two_parameter_single_step(pCell,phenotype, dt);
+ //  // std::cout<<" FORCE PARAM: "<< k_oocyte<<", "<<k_granulosa<<", "<<k_basement<<"\n";
+  // spring_cell_functions(pCell,phenotype,dt);	
   std::ofstream ofs;
-	ofs.open ("./output/2p_Test.csv", std::ofstream::out | std::ofstream::app);
+	ofs.open ("./output/2p_Test_oocyte.csv", std::ofstream::out | std::ofstream::app);
 	ofs << PhysiCell_globals.current_time<<", "<<pCell->index<<", "<<SPcell->m_my_pCell->index<<", "<< pCell<<", "<< pCell->phenotype.volume.total<<", "<<SPcell->exterior_osmolality<<", "<<SPcell->interior_osmolality <<", "<<SPcell->exterior_molarity[1]<<", "<<SPcell->interior_molarity[1]<<", "<<PhysiCell_settings.omp_num_threads<<", "<< thread_id<<"\n";
 	ofs.close();
   // std::cout<<"VOLUME:"<<pCell->phenotype.volume.total<<"\n"; 
   
-  counting_time++;
 	return;
 
 }
@@ -334,35 +313,16 @@ void create_granulosa_cell_type( void )
 	// set custom data values
 	// Parameter<double> paramD;
 	granulosa_cell.custom_data.add_variable("basement_k","unitless",k_basement);
-  granulosa_cell.custom_data.add_variable("neighborhood_radius","unitless",-1.0);//radius beyond cell surface where connections occur
+  granulosa_cell.custom_data.add_variable("neighborhood_radius","unitless",10);//radius beyond cell surface where connections occur
 	granulosa_cell.custom_data[ "initial_volume" ] = parameters.doubles("gran_isotonic_volume");//523.6;
-	// granulosa_cell.custom_data["Lp"]=-1;
-	// granulosa_cell.custom_data["Ps"]=-1;
 	granulosa_cell.custom_data.add_variable("connection_length","micometers",0.5);
 	granulosa_cell.custom_data["surface_area"]= 314.159;//parameters.doubles("granulosa_Area");
-	granulosa_cell.custom_data["R"]= parameters.doubles("gas_constant");//R;//parameters.doubles("granulosa_R");
-	granulosa_cell.custom_data["Temperature"]=parameters.doubles("temperature");//parameters.doubles("granulosa_Temperature");
-	// granulosa_cell.custom_data["isosmotic_water_volume"]//parameters.doubles("isosmotic_granulosa_volume");
-	// granulosa_cell.custom_data["Partial_molar_volume"]=0.0557414;//parameters.doubles("EG_partial_molar_volume");
+	granulosa_cell.custom_data["R"]= R;//R;//parameters.doubles("granulosa_R");
+	granulosa_cell.custom_data["Temperature"]=293.15;//parameters.doubles("granulosa_Temperature");
 	granulosa_cell.custom_data["Vb_fraction"]=.2;
 	granulosa_cell.custom_data.add_variable("cell_k","unitless",k_granulosa);
-	// granulosa_cell.custom_data.add_variable("Water_volume", "unitless", 418.88);
-	// granulosa_cell.custom_data.add_variable("dVw_dt", "unitless", 0.0);
-	// granulosa_cell.custom_data.add_variable("prev_dVw_dt", "unitless", 0.0);
-	// granulosa_cell.custom_data.add_variable("Toxicity","unitless",0);
-	// granulosa_cell.custom_data.add_variable("external_concentration_of_solute_2","unitless",0);
-	// granulosa_cell.custom_data.add_variable("Prev_total_volume","unitless",523.6);
-	// granulosa_cell.custom_data.add_variable("test_uptake","unitless",0);
-	// granulosa_cell.custom_data.add_variable("test_current_voxel","unitless",0);
-	// granulosa_cell.custom_data.add_variable("osmotically_active_water_volume","unitless",418.88);//.29*initial_volume
-	// granulosa_cell.custom_data.add_variable("prev_osmotically_active_water_volume","unitless",418.88);
-	// granulosa_cell.custom_data.add_variable("external_GLY_concentration","mole/liter",0.0);
-	// granulosa_cell.custom_data.add_variable("external_EG_concentration","mole/liter",0.0);
-	// granulosa_cell.custom_data.add_variable("internal_GLY_concentration","mole/liter",0.0);
-	// granulosa_cell.custom_data.add_variable("internal_EG_concentration","mole/liter",0.0);
 	granulosa_cell.custom_data.add_variable("spring_constant","N/m",k_granulosa);
   granulosa_cell.custom_data.add_variable("allowed_overlap","um",2);//radius beyond cell surface where connections occur
-	granulosa_cell.custom_data.add_variable("max_interaction_distance","unitless",0.5);
   granulosa_cell.custom_data.add_variable("max_breakage_distance","um",10);
 	return;
 }
@@ -374,7 +334,22 @@ int count=0;
 
 void granulosa_phenotype_rule( Cell* pCell, Phenotype& phenotype, double dt )
 {
-	return;
+  Spring_Cell* SPcell=spring_cell_by_pCell_index[pCell->index];
+  int thread_id=omp_get_thread_num();
+  two_parameter_single_step(pCell,phenotype, dt);
+ //  // std::cout<<" FORCE PARAM: "<< k_oocyte<<", "<<k_granulosa<<", "<<k_basement<<"\n";
+  // spring_cell_functions(pCell,phenotype,dt);
+  // if(count%100==0){
+  //   std::ofstream ofs;
+  //   ofs.open ("./output/2p_Test_granulosa.csv", std::ofstream::out | std::ofstream::app);
+  //   ofs << PhysiCell_globals.current_time<<", "<<pCell->index<<", "<<SPcell->m_my_pCell->index<<", "<< pCell<<", "<< pCell->phenotype.volume.total<<", "<<SPcell->exterior_osmolality<<", "<<SPcell->interior_osmolality <<", "<<SPcell->exterior_molarity[1]<<", "<<SPcell->interior_molarity[1]<<", "<<PhysiCell_settings.omp_num_threads<<", "<< thread_id<<"\n";
+  //   ofs.close();
+  //   count++;
+  // }
+  // else{
+  //   count++;
+  // }
+  return;
 }
 void granulosa_velocity_rule( Cell* pCell, Phenotype& phenotype, double dt )
 {
@@ -594,7 +569,7 @@ void setup_microenvironment( void )
 	default_microenvironment_options.outer_Dirichlet_conditions = false;
 	initialize_microenvironment();
   //dirichlet_nodes_radius is the CPA diffusion to tissue/cell distance, set close to follicle or oocyte for rapid change in exterior conditions
-  double dirichlet_nodes_radius=55.0;
+  double dirichlet_nodes_radius=95.0;
   activate_nodes(dirichlet_nodes_radius);//place the Dirichlet nodes at a radius around the follicle  
 	//total_uptake.resize(microenvironment.mesh.voxels.size());
 	//all_total_uptakes.resize(number_of_permeating_solutes,total_uptake);
@@ -602,11 +577,12 @@ void setup_microenvironment( void )
 }
 void setup_secondary_stage_follicle(void)
 {
-  double follicle_radius=130;
-  double initial_granulosa_radius=5;
-  double initial_oocyte_radius=58;
-	double initial_overlap=.1;//representation of the initial packing density from config eventually
-	double cell_spacing = initial_granulosa_radius-initial_overlap;//slight overlap to represent cells up against each other better variable name
+  double initial_granulosa_radius=parameters.doubles("gran_radius"); 
+  double initial_oocyte_radius=parameters.doubles("oocyte_radius");
+	double initial_overlap=.1;//representation of the initial packing density -- taken from physicell simulations of cancer spheroids
+	double follicle_radius =initial_oocyte_radius+3*(initial_granulosa_radius*2)+initial_granulosa_radius; // 3 to 4 layers
+	
+  double cell_spacing = initial_granulosa_radius-initial_overlap;//slight overlap to represent cells up against each other better variable name
 	//creating the oocyte
 	std::cout << "\tPlacing oocyte cells ... "<< "\n";
 	// place the oocyte cell at origin
@@ -626,6 +602,7 @@ void setup_secondary_stage_follicle(void)
 		pCell_granulosa->assign_position( granulosa_positions[i] );
 		pCell_granulosa->set_total_volume(pCell_granulosa->custom_data["initial_volume"]);
 	}
+  std::cout<<"Follicle is... "<< follicle_radius<<" um in radius."<<"\n";
 	return;
 }
 
@@ -697,6 +674,7 @@ void setup_toy_granulosa_model(void)
 	pCell_granulosa6->assign_position(25,5,0 );
 	pCell_granulosa6->set_total_volume(pCell_granulosa6->custom_data["initial_volume"]);
 */
+return;
 }
 
 void setup_just_oocyte(void)
@@ -785,10 +763,11 @@ void setup_tissue( void )
 	//colored_cell_list.resize(0);
 
   //select tissue to set up:
-	//setup_secondary_stage_follicle();
+	setup_secondary_stage_follicle();
 	//setup_wedge();
 	//setup_toy_granulosa_model();
-	setup_just_oocyte();	// setup_4_granulosa_test_case();
+  // setup_just_oocyte();	
+  // setup_4_granulosa_test_case();
 	initialize_spring_cells();
 	//setup_n_layer_follicle(7);
 

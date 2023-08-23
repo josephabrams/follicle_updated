@@ -6,6 +6,7 @@
 #include <fstream>
 #include <unordered_map>
 #include <memory>
+#include <vector>
 // #include "./springs.h"
 // using namespace Springs;
 //  #include <stdef.h>
@@ -77,30 +78,29 @@ void attach_neighboring_springs(Cell *pCell, double max_spring_length)
 //   return;
 //
 // }
-std::vector <int> diffusion_bounding_box(Cell* pCell)
+void diffusion_bounding_box(Cell* pCell, std::vector<int>* bounding_box_by_index)
 {
   //gets the box of voxels cell is contained in, includes the voxels inside
-  std::vector<int> bounding_box_by_index={};
   //bounding box of voxels in the microenvironment
   //for speed get center voxel figure out x,y,z offset and only check local voxels
-  Voxel center_voxel=microenvironment.nearest_voxel(pCell->position);
-  std::vector<double> center_voxels_center= center_voxel.center; // get center voxel
-  std::vector<double> offset=center_voxels_center-pCell->position;
+  int center_voxel_index=microenvironment.nearest_voxel_index(pCell->position);
+  std::vector<double> center_voxel_position=pCell->get_container()->underlying_mesh.voxels[center_voxel_index].center;
+  std::vector<double> offset=center_voxel_position-pCell->position;
   //figure out the corners of my bounding box of voxels to search
   std::vector<double> lower_point(3,0.0);
   std::vector<double> upper_point(3,0.0);
   for (size_t i = 0; i < 3; i++)
   {
-    lower_point[i]= center_voxels_center[i]-offset[i]-ceil(pCell->phenotype.geometry.radius);
-    upper_point[i]= center_voxels_center[i]+offset[i]+ceil(pCell->phenotype.geometry.radius);
+    lower_point[i]= center_voxel_position[i]-offset[i]-ceil(pCell->phenotype.geometry.radius);
+    upper_point[i]= center_voxel_position[i]+offset[i]+ceil(pCell->phenotype.geometry.radius);
   }
-  Voxel starting_voxel=microenvironment.nearest_voxel(lower_point);
-  Voxel ending_voxel=microenvironment.nearest_voxel(upper_point);
-  bounding_box_by_index=general_voxel_bounding_box(starting_voxel.center,ending_voxel.center,default_microenvironment_options.dx,microenvironment.mesh);
+  std::vector<double> starting_voxel_center=microenvironment.nearest_voxel(lower_point).center;
+  std::vector<double> ending_voxel_center=microenvironment.nearest_voxel(upper_point).center;
+  general_voxel_bounding_box(bounding_box_by_index,starting_voxel_center,ending_voxel_center,default_microenvironment_options.dx,microenvironment.mesh);
   //std::cout<<"Bounding box"<<bounding_box_by_index<<"\n";
-  return bounding_box_by_index;
+  return;
 }
-std::vector<std::vector<double>> get_voxel_corners(std::vector<double> voxel_center)
+void get_voxel_corners(std::vector<double> &voxel_center, std::vector<std::vector<double>> &return_corners )
 {
   //find all 8 corners of the voxel cube
   double zz=default_microenvironment_options.dz/2.0;
@@ -120,25 +120,37 @@ std::vector<std::vector<double>> get_voxel_corners(std::vector<double> voxel_cen
       }
     }   
   }
-  return corners;
+  #pragma omp critical
+  {
+    return_corners[0].assign(corners[0].begin(),corners[0].end());
+    return_corners[1].assign(corners[1].begin(),corners[1].end());
+    return_corners[2].assign(corners[2].begin(),corners[2].end());
+    return_corners[3].assign(corners[3].begin(),corners[3].end());
+    return_corners[4].assign(corners[4].begin(),corners[4].end());
+    return_corners[5].assign(corners[5].begin(),corners[5].end());
+    return_corners[6].assign(corners[6].begin(),corners[6].end());
+    return_corners[7].assign(corners[7].begin(),corners[7].end());
+  }
+  return;
 }
-std::vector<int> get_intersecting_voxels(Cell* pCell)
+void get_intersecting_voxels(Cell* pCell,std::vector<int>* return_intersecting_voxel_indicies)
 {
    //if voxel is edge voxel count as exterior
   //a voxel is exterior if some of its corners fall within the sphere but not all 
   //take tight bounding box and remove voxels where all or none of the corners are <Radius
-    std::vector <int> bounding_voxels=diffusion_bounding_box(pCell);
+    std::vector<int> bounding_voxels={};
+    diffusion_bounding_box(pCell,&bounding_voxels);
     std::vector<int> intersecting_voxels={};
-    std::vector<int> return_voxel_index={};
 
     for (size_t i = 0; i < bounding_voxels.size(); i++)
     {
       std::vector<double> test_voxel_center=pCell->get_container()->underlying_mesh.voxels[bounding_voxels[i]].center;
-      std::vector <std::vector <double>> test_corners=get_voxel_corners(test_voxel_center);
+      std::vector<std::vector <double>> test_corners(8,std::vector<double>(3,0.0));
+      get_voxel_corners(test_voxel_center,test_corners);
     
      
       int sum=0;
-      #pragma omp private(sum,exterior_voxels)
+      #pragma omp private(sum,intersecting_voxels)
       for(size_t j =0; j<test_corners.size();j++)
       {
         //std::cout<<j<<" "<<test_corners[j]<<" distance: "<< norm(test_corners[j]-pCell->position)<<std::endl;
@@ -156,24 +168,27 @@ std::vector<int> get_intersecting_voxels(Cell* pCell)
     }
     #pragma omp critical
     {
-      return_voxel_index.insert(return_voxel_index.end(), intersecting_voxels.begin(), intersecting_voxels.end());
+      return_intersecting_voxel_indicies->assign(intersecting_voxels.begin(),intersecting_voxels.end());
+      //return_intersecting_voxel_indicies->insert(return_intersecting_voxel_indicies->end(), intersecting_voxels.begin(), intersecting_voxels.end());
     }
 
-    return return_voxel_index;
+    return;
 }
-std::vector<int> get_exterior_voxels(Cell* pCell)//some but not all the coners of the voxel are within the cell and the voxel center is outside the cell
+void get_exterior_voxels(Cell* pCell, std::vector<double>* return_exterior_voxel_indicies)//some but not all the coners of the voxel are within the cell and the voxel center is outside the cell
 {
    //if voxel is edge voxel count as exterior
   //a voxel is exterior if some of its corners fall within the sphere but not all 
   //take tight bounding box and remove voxels where all or none of the corners are <Radius
-    std::vector <int> bounding_voxels=diffusion_bounding_box(pCell);
+    std::vector <int> bounding_voxels={};
+    diffusion_bounding_box(pCell,&bounding_voxels);
     std::vector<int> exterior_voxels={};
-    std::vector<int> return_voxel_index={};
 
     for (size_t i = 0; i < bounding_voxels.size(); i++)
     {
       std::vector<double> test_voxel_center=pCell->get_container()->underlying_mesh.voxels[bounding_voxels[i]].center;
-      std::vector <std::vector <double>> test_corners=get_voxel_corners(test_voxel_center);
+      // std::vector <std::vector <double>> test_corners=get_voxel_corners(test_voxel_center);
+      std::vector<std::vector <double>> test_corners(8,std::vector<double>(3,0.0));
+      get_voxel_corners(test_voxel_center,test_corners);
     
      
       int sum=0;
@@ -195,25 +210,27 @@ std::vector<int> get_exterior_voxels(Cell* pCell)//some but not all the coners o
     }
     #pragma omp critical
     {
-      return_voxel_index.insert(return_voxel_index.end(), exterior_voxels.begin(), exterior_voxels.end());
+      return_exterior_voxel_indicies->assign(exterior_voxels.begin(), exterior_voxels.end());
     }
 
-    return return_voxel_index;
+    return;
 }
-std::vector<int> get_interior_voxels(Cell* pCell) //voxel center is inside the cell
+void get_interior_voxels(Cell* pCell, std::vector<int>* return_interior_voxel_indicies) //voxel center is inside the cell
 {
    //if voxel is edge voxel count as exterior
   //a voxel is exterior if some of its corners fall within the sphere but not all 
   //take tight bounding box and remove voxels where all or none of the corners are <Radius
-    std::vector<int> bounding_voxels=diffusion_bounding_box(pCell);
+    std::vector<int> bounding_voxels={};
+    diffusion_bounding_box(pCell,&bounding_voxels);
+    
     std::vector<int> interior_voxels={};
-    std::vector<int> return_voxel_index={};
 
     for (size_t i = 0; i < bounding_voxels.size(); i++)
     {
       std::vector<double> test_voxel_center=pCell->get_container()->underlying_mesh.voxels[bounding_voxels[i]].center;
-      std::vector <std::vector <double>> test_corners=get_voxel_corners(test_voxel_center);
-    
+      // std::vector <std::vector <double>> test_corners=get_voxel_corners(test_voxel_center);
+      std::vector<std::vector <double>> test_corners(8,std::vector<double>(3,0.0));
+      get_voxel_corners(test_voxel_center,test_corners);
      
       int sum=0;
       #pragma omp private(interior_voxels)
@@ -226,10 +243,10 @@ std::vector<int> get_interior_voxels(Cell* pCell) //voxel center is inside the c
     }
     #pragma omp critical
     {
-      return_voxel_index.insert(return_voxel_index.end(), interior_voxels.begin(), interior_voxels.end());
+      return_interior_voxel_indicies->assign(interior_voxels.begin(), interior_voxels.end());
     }
 
-    return return_voxel_index;
+    return;
 }
 
 void solute_loading( double oxygen, double final_solute_concentration_1, double final_solute_concentration_2,double final_solute_concentration_3,double final_solute_concentration_4, double final_solute_concentration_5)
@@ -302,13 +319,18 @@ double concentration_at_boundary(Cell* pCell, int solute_index)
   double average=0;
   double sum=0;
   std::vector <int> exterior_voxel_index={};
-  exterior_voxel_index=get_exterior_voxels(pCell);
+  // exterior_voxel_index=get_exterior_voxels(pCell);
   Spring_Cell* SPcell=spring_cell_by_pCell_index[pCell->index];
-  SPcell->uptake_voxels=get_intersecting_voxels(pCell);
-  // #pragma omp critical
-  // {
-  //   SPcell->uptake_voxels.insert(SPcell->uptake_voxels.end(),exterior_voxel_index.begin(),exterior_voxel_index.end() );
-  // }
+  if(norm(SPcell->previous_position-pCell->position)>default_microenvironment_options.dx && std::abs(SPcell->previous_radius-pCell->phenotype.geometry.radius)>default_microenvironment_options.dx)
+  {
+    get_intersecting_voxels(pCell,&(SPcell->uptake_voxels));
+    // #pragma omp critical
+    // {
+    //   SPcell->uptake_voxels.insert(SPcell->uptake_voxels.end(),exterior_voxel_index.begin(),exterior_voxel_index.end() );
+    // }
+
+  } 
+  
   if(SPcell->uptake_voxels.size()<2)//for cells smaller than or approx. equal to one voxel
   {
     average=microenvironment.nearest_density_vector( microenvironment.nearest_voxel_index(pCell->position))[solute_index];
@@ -316,22 +338,22 @@ double concentration_at_boundary(Cell* pCell, int solute_index)
   else 
   {
     #pragma omp reduction(+:sum)
-    for (size_t i = 0; i < exterior_voxel_index.size(); i++)
+    for (size_t i = 0; i < SPcell->uptake_voxels.size(); i++)
     {
        // std::cout<<" concentration "<<microenvironment.nearest_density_vector(exterior_voxel_index[i] )[solute_index]<<"\n";
         //std::cout<<" exterior voxel index"<< exterior_voxel_index[i]<<"\n";
         //std::cout<<" concentration for sum: "<<microenvironment.nearest_density_vector(exterior_voxel_index[i] )[solute_index]<<"\n";
-      if(microenvironment.nearest_density_vector(exterior_voxel_index[i])[solute_index]<1e-16)// to deal with numerical instability from tiny inirial diffusion values inside rasterized cell
+      if(microenvironment.nearest_density_vector(SPcell->uptake_voxels[i])[solute_index]<1e-16)// to deal with numerical instability from tiny inirial diffusion values inside rasterized cell
       {
           sum+=0.0;
       }
       else {
-        sum+=microenvironment.nearest_density_vector( exterior_voxel_index[i])[solute_index];
+        sum+=microenvironment.nearest_density_vector( SPcell->uptake_voxels[i])[solute_index];
       }
     }
     #pragma omp critical
     {
-      average=sum/exterior_voxel_index.size();
+      average=sum/SPcell->uptake_voxels.size();
     }
   } 
   return average; 
@@ -339,12 +361,12 @@ double concentration_at_boundary(Cell* pCell, int solute_index)
 
 
 
-std::vector<Cell *> cells_in_me(Cell *pCell) // uses mechanics vectors to search for cells that are within or equal to pCell radius can also be used for bounding boxes
+void cells_in_me(Cell *pCell, std::vector<Cell*> *return_cells_in_me) // uses mechanics vectors to search for cells that are within or equal to pCell radius can also be used for bounding boxes
 {
   //NOTE: current physicell uses the same cartesian mesh for mechanics and diffusion?? could use functions for diffusion bounding box
-  std::vector<Cell *> agents_in_me;
-  std::vector<int> search_voxels=diffusion_bounding_box(pCell);
-  std::vector<Cell *> agents_in_voxel;
+  std::vector<int> search_voxels={};
+  diffusion_bounding_box(pCell,&search_voxels);
+  std::vector<Cell *> agents_in_voxel={};
   #pragma omp private(agents_in_voxel)
   for (int i = 0; i < search_voxels.size();i++) 
   { 
@@ -363,7 +385,7 @@ std::vector<Cell *> cells_in_me(Cell *pCell) // uses mechanics vectors to search
   }
   #pragma omp critical
   {
-    agents_in_me.insert(agents_in_me.end(), agents_in_voxel.begin(), agents_in_voxel.end());
+    return_cells_in_me->insert(return_cells_in_me->end(), agents_in_voxel.begin(), agents_in_voxel.end());
   }
       // std::cout<<"voxel " << temp_voxel.mesh_index<< " is inside my radius
       // and located at: "<< temp_voxel.center[0]<<",
@@ -371,7 +393,7 @@ std::vector<Cell *> cells_in_me(Cell *pCell) // uses mechanics vectors to search
     
   // std::cout<<agents_in_me.size()<< " agents in me:
   // "<<agents_in_me[0]<<std::endl;
-  return agents_in_me;
+  return;
 }
 void find_basement_membrane_voxels(std::vector<double> center_of_sphere, std::vector<double> radius_of_sphere) {
   return;
@@ -383,14 +405,17 @@ std::vector<double> Hookes_law_force(std::vector<double> direction, double rest_
   return force;
 }
 void update_all_forces(Cell* pCell, double dt, double spring_constant) {
-  //these both update velocity
-  double basement_radius=130;
-  std::vector<double> basement_center={0.0,0.0,0.0};
-  custom_add_potentials_for_pCells(pCell);
-  non_connected_neighbor_pressure(pCell,dt,spring_constant);
-  // function is designed so you could have a changing basement membrane but we set it static 
   Spring_Cell* SPcell=spring_cell_by_pCell_index[pCell->index];
-  basement_membrane_mechanics(SPcell,basement_radius,basement_center,dt);  
+  SPcell->previous_radius=pCell->phenotype.geometry.radius;
+  SPcell->previous_velocity=pCell->velocity;
+  SPcell->previous_position=pCell->position;
+  //these both update velocity
+  double basement_radius=94;//follicle_radius=oocyte radius+ 3* granulosa radius+ granulosa radius TODO: set this from xml
+  std::vector<double> basement_center={0.0,0.0,0.0};
+  // custom_add_potentials_for_pCells(pCell);
+  // non_connected_neighbor_pressure(pCell,dt,spring_constant);
+  // function is designed so you could have a changing basement membrane but we set it static 
+  // basement_membrane_mechanics(SPcell,basement_radius,basement_center,dt);  
   return;
 }
 void non_connected_neighbor_pressure(Cell* pCell, double dt, double spring_constant) {
@@ -399,7 +424,8 @@ void non_connected_neighbor_pressure(Cell* pCell, double dt, double spring_const
   // cell to be the same size as mechanics voxel uses same spring value as
   // connections, avoids double pushing on connected cells
   // probably much slower than it could be, optomize in future
-  std::vector<Cell *> possible_neighbors = cells_in_me(pCell); // vector containing cells that could be interacting
+  std::vector<Cell *> possible_neighbors ={}; 
+  cells_in_me(pCell,&possible_neighbors); // vector containing cells that could be interacting
                                                                // with pCell that aren't in neighboors
   std::vector<Cell *> non_connected_neighbors;
   #pragma omp private(possible_neighbors)
@@ -462,6 +488,7 @@ void non_connected_neighbor_pressure(Cell* pCell, double dt, double spring_const
       sum_z_velocity += (std::abs(force_on_neighbor[2] / pCell_mass * dt) < 1e-16) ? 0.0 : (force_on_neighbor[2] / pCell_mass * dt);
     }
     // TODO: possibly, eventually use Adams_Bashforth_ODE_2nd_Order for velocity
+    // velocity_x= previous_x+ 
   }
 #pragma omp critical
   {
@@ -564,14 +591,16 @@ std::vector<std::vector<double>> create_cell_sphere_positions(double cell_radius
   return cells;
 }
 
-void break_TZPs(Spring_Cell* Oocyte,double max_breakage_distance) 
+void break_TZPs(Spring_Cell* SP_Oocyte,double max_breakage_distance) 
 {
-  for (int i=0; i<Oocyte->m_springs.size();i++) {//loop through the oocytes springs
-    Spring* S;
-    S=(Oocyte->m_springs[i]);
-    if(distance_between_membranes(Oocyte->m_my_pCell,S->m_pNeighbor)>max_breakage_distance)
+  //TAG: possible issue here
+  for (int i=0; i<SP_Oocyte->m_springs.size();i++) {//loop through the oocytes springs
+    Spring* S=SP_Oocyte->m_springs[i];//S is the ith spring
+    if(distance_between_membranes(SP_Oocyte->m_my_pCell,S->m_pNeighbor)>max_breakage_distance)
     {
-      Oocyte->remove_spring((spring_cell_by_pCell_index[S->m_pNeighbor->index]));
+      Spring_Cell* SP_Neighbor=spring_cell_by_pCell_index[S->m_pNeighbor->index];
+      SP_Oocyte->remove_spring(SP_Neighbor);
+      SP_Neighbor->remove_spring(SP_Oocyte);
     }
   } 
   return;
@@ -815,7 +844,9 @@ std::vector<int> get_basement_membrane_intersection(std::vector <double> center_
     for (size_t i = 0; i < bounding_voxels.size(); i++)
     {
       std::vector<double> test_voxel_center=microenvironment.voxels(bounding_voxels[i]).center;
-      std::vector <std::vector <double>> test_corners=get_voxel_corners(test_voxel_center);
+      // std::vector <std::vector <double>> test_corners=get_voxel_corners(test_voxel_center);
+      std::vector<std::vector <double>> test_corners(8,std::vector<double>(3,0.0));
+      get_voxel_corners(test_voxel_center,test_corners);
     
      
       int sum=0;
@@ -958,64 +989,67 @@ std::vector <int> max_interaction_variable_moore_neighborhood(Cell* pCell, doubl
  
     }
 
-  std::vector<int> bounding_box_by_index=general_voxel_bounding_box(lower_point,upper_point,default_microenvironment_options.dx,(pCell->get_container()->underlying_mesh));
+  std::vector<int> bounding_box_by_index={};
+  general_voxel_bounding_box(&bounding_box_by_index,lower_point,upper_point,default_microenvironment_options.dx,(pCell->get_container()->underlying_mesh));
   //std::cout<<"Bounding box"<<bounding_box_by_index<<"\n";
   return bounding_box_by_index;
 }
-std::vector <int> general_voxel_bounding_box(std::vector <double> starting_position, std::vector <double> ending_position, double voxel_length, BioFVM::Cartesian_Mesh a_mesh)
+void general_voxel_bounding_box(std::vector<int> *return_bounding_box,std::vector<double> &starting_position, std::vector <double>&ending_position, double &voxel_length, BioFVM::Cartesian_Mesh &a_mesh)
 {
   //function to find a box of voxels in a cartesian mesh given the lowest corner to the highest, should work in 2D and 3D
   std::vector<int> bounding_box_by_index={-1};
-  Voxel starting_voxel=a_mesh.nearest_voxel(starting_position);// should work with pCell-get_container or microenvironment
-  Voxel ending_voxel=a_mesh.nearest_voxel(ending_position);
-  if(starting_voxel.mesh_index==ending_voxel.mesh_index)
+  int starting_voxel_index=a_mesh.nearest_voxel_index(starting_position);// should work with pCell-get_container or microenvironment
+  int ending_voxel_index=a_mesh.nearest_voxel_index(ending_position);
+  std::vector<double> starting_voxel_center=a_mesh.nearest_voxel(starting_position).center;
+  std::vector<double> ending_voxel_center=a_mesh.nearest_voxel(ending_position).center;
+  if(starting_voxel_index==ending_voxel_index)
   {
     //contained entirely in 1 voxel my exterior is my voxel
-    bounding_box_by_index[0]=starting_voxel.mesh_index;
-    return bounding_box_by_index;
+    bounding_box_by_index[0]=starting_voxel_index;
   }
-
+  else{
    std::vector <int> num_voxels_across(3,0.0);
    //loop through voxel centers, get index and store it
    std::vector <int> dimensions={0,0,0};
    for (size_t i = 0; i < 3; i++)
    {
-    num_voxels_across[i]=int((ceil(ending_voxel.center[i])-floor(starting_voxel.center[i]))/voxel_length); 
-    if(floor(starting_voxel.center[i])==ceil(ending_voxel.center[i]))
+    num_voxels_across[i]=int((ceil(ending_voxel_center[i])-floor(starting_voxel_center[i]))/voxel_length); 
+    if(floor(starting_voxel_center[i])==ceil(ending_voxel_center[i]))
     {
       dimensions[i]=1;//if a dimension is flat mark it with 1
     }
    }
    
-    int upper_z=0;
-    int upper_y=0;
-    int upper_x=0;
+    int upper_z=num_voxels_across[2]+dimensions[2];
+    int upper_y=num_voxels_across[1]+dimensions[1];
+    int upper_x=num_voxels_across[0]+dimensions[0];
+  
     #pragma omp critical
-    { //to avoid race conditions on resize if multiple cells are resized, unsure if this is an issue
-     
-      upper_z=num_voxels_across[2]+dimensions[2];
-      upper_y=num_voxels_across[1]+dimensions[1];
-      upper_x=num_voxels_across[0]+dimensions[0];
+    { //to avoid race conditions on resize if multiple cells are resized, unsure if this is an issue 
       bounding_box_by_index.resize(upper_x*upper_y*upper_z);
     }
     std::vector<double> position(3,0.0);
     int count=0;
     for(int zi=0; zi<upper_z; zi++)
     { 
-      position[2]=double(starting_voxel.center[2]+(double(zi-dimensions[2])*voxel_length));
+      position[2]=double(starting_voxel_center[2]+(double(zi-dimensions[2])*voxel_length));
       for (int yi = 0; yi <upper_y ; yi++)
       {
-        position[1]=double(starting_voxel.center[1]+(double(yi-dimensions[1])*voxel_length));
+        position[1]=double(starting_voxel_center[1]+(double(yi-dimensions[1])*voxel_length));
         for (int xi = 0; xi <upper_x ; xi++)
         {
-            position[0]=double(starting_voxel.center[0]+(double(xi-dimensions[0])*voxel_length));
-            bounding_box_by_index[count]=microenvironment.nearest_voxel_index(position);
+            position[0]=double(starting_voxel_center[0]+(double(xi-dimensions[0])*voxel_length));
+            bounding_box_by_index[count]=a_mesh.nearest_voxel_index(position);
             count++;
         }
       }
     }
- 
-  return bounding_box_by_index;
+  } 
+  #pragma omp critical
+  {
+    return_bounding_box->assign(bounding_box_by_index.begin(),bounding_box_by_index.end());
+  }
+  return;
 }
 /* function just connects the spring cells doesn't check distances, this might be better places in springs.cpp     */
 void connect_spring_cells(Spring_Cell* SpCell_1, Spring_Cell* SpCell_2)
@@ -1112,15 +1146,16 @@ std::vector <Spring_Cell*> spring_cells_in_neighborhood(Spring_Cell* SpCell, dou
   }
   return spring_cells_found;
 }
-void initialize_spring_connections()
+void initialize_spring_connections()//also initialize mechanics and 2p vectors which probably should be done elsewhere
 {
-  
+  std::cout<<"initializing connections!"<<"\n"; 
   //using modified moore neighborhood search for "spring cell" neighbors and connect them with spring objects
   for(size_t i=0;i<all_spring_cells.size();i++) //loop through all spring cells
   {
     //std::cout<<"Second!!"<<std::endl;
     Spring_Cell* SpCell=all_spring_cells[i];
     SpCell->set_2p_initial_conditions();
+    SpCell->initialize_mechanics(); 
     //std::cout<<" spcell "<<SpCell<<std::endl;
     std::vector<Spring_Cell*> SpNeighbors=spring_cells_in_neighborhood(SpCell,1);
    
@@ -1247,7 +1282,7 @@ void update_exterior_concentrations(Spring_Cell* SPcell)
 }
 void initialize_spring_cells()//make all cells spring cells
 {
-
+  std::cout<<"Initializing Spring Cells"<<"\n";
   //encapsulate all cells in the super class spring cell
   //find initial spring lengths and connect neighbors
   //set up basement membrane and connected exterior cells
@@ -1407,7 +1442,7 @@ std::vector <int> spherical_bounding_box(std::vector <double> center_point, doub
   }
   Voxel starting_voxel=microenvironment.nearest_voxel(lower_point);
   Voxel ending_voxel=microenvironment.nearest_voxel(upper_point);
-  bounding_box_by_index=general_voxel_bounding_box(starting_voxel.center,ending_voxel.center,default_microenvironment_options.dx,microenvironment.mesh);
+  general_voxel_bounding_box(&bounding_box_by_index,starting_voxel.center,ending_voxel.center,default_microenvironment_options.dx,microenvironment.mesh);
   return bounding_box_by_index;
 }
 
