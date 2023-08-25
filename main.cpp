@@ -95,7 +95,17 @@ int main( int argc, char* argv[] )
 	if( argc > 1 )
 	{
 		XML_status = load_PhysiCell_config_file( argv[1] ); 
-		sprintf( copy_command , "cp %s %s" , argv[1] , PhysiCell_settings.folder.c_str() ); 
+		sprintf( copy_command , "cp %s %s" , argv[1] , PhysiCell_settings.folder.c_str() );
+    if(argc>3)
+    {
+      std::string k_oocyte_str= argv[2];
+      std::string k_granulosa_str= argv[3];
+      std::string k_basement_str=argv[4];
+      k_oocyte= std::stod(k_oocyte_str);
+      k_granulosa= std::stod(k_granulosa_str);
+      k_basement= std::stod(k_basement_str);
+      std::cout<<" FORCE PARAM: "<< k_oocyte<<", "<<k_granulosa<<", "<<k_basement<<"\n";
+    }
 	}
 	else
 	{
@@ -112,8 +122,8 @@ int main( int argc, char* argv[] )
 	omp_set_num_threads(PhysiCell_settings.omp_num_threads);
 	
 	// time setup 
-	std::string time_units = "min"; 
-
+	std::string time_units = "sec"; 
+  PhysiCell_settings.time_units="sec";
 	/* Microenvironment setup */ 
 	setup_microenvironment(); // modify this in the custom code 
 	
@@ -192,9 +202,10 @@ int main( int argc, char* argv[] )
 			// save data if it's time. 
 			if( fabs( PhysiCell_globals.current_time - PhysiCell_globals.next_full_save_time ) < 0.01 * diffusion_dt )
 			{
-        std::vector <double> center={0.0,0.0,0.0};
+        // std::vector <double> center={0.0,0.0,0.0};
 				display_simulation_status( std::cout );
-        std::cout<<" Concentration is: "<< microenvironment.nearest_density_vector(microenvironment.nearest_voxel_index(center))<<"\n";
+        // output_all_voxels_concentrations();
+        // std::cout<<" Concentration is: "<< microenvironment.nearest_density_vector(microenvironment.nearest_voxel_index(center))<<"\n";
 				if( PhysiCell_settings.enable_legacy_saves == true )
 				{	
 					log_output( PhysiCell_globals.current_time , PhysiCell_globals.full_output_index, microenvironment, report_file);

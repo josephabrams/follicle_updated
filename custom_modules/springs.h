@@ -82,9 +82,12 @@ public:
   double solid_volume;
   double dVw;//cell water flux
   double previous_dVw;
+  double previous_radius;
   std::vector<double> solute_moles;
   std::vector<double> next_solute_moles;
-
+  std::vector<double> previous_position;
+  std::vector<double> previous_velocity;
+  std::vector<double> previous_acceleration;
   std::vector<double> uptake;//molar uptake/secretion of solutes
   std::vector<double> dN;//cell mole flux of solutes
   std::vector<double> previous_dN;//previous mole flux of solutes
@@ -97,9 +100,11 @@ public:
   std::vector<double> exterior_component_molality;
   std::vector<double> Ps;
   double Lp;
+  double toxicity;
   std::vector <double> solute_uptake;
   double water_uptake;
   std::vector <int> uptake_voxels;
+  int initial_number_of_connections;
 //   //2p methods
 //     Cryo_State_Variables(int solute_num);
 //     void get_external_molarity(int component, Cell* pCell);//sample microenvironment
@@ -112,7 +117,7 @@ public:
     //for mixture use virial for GLY and EG but add HM
   void dN_molarity(); 
   void dVw_Osmolality();
-  void two_p_forward_step();
+  void two_p_forward_step(double dt);
     // void two_parameter_update
     // void cell_volume_update
     // void compute_internal_component_molarity //moles/(V_total-V_b)
@@ -125,6 +130,7 @@ public:
    
   void two_p_update_volume();
   void set_2p_initial_conditions();
+  void initialize_mechanics();
   void add_spring(Spring_Cell* other_pSCell, double spring_length);
   void remove_spring(Spring_Cell* other_pSCell);
  // 
@@ -135,6 +141,8 @@ public:
 
 extern std::vector <Spring_Cell* > all_spring_cells;
 extern std::vector <Spring_Cell*> spring_cell_by_pCell_index;
+
+extern std::vector <Spring*> all_springs;
 Spring_Cell* create_spring_cell(Cell* pCell);//( Cell* pCell, Phenotype& phenotype);
 void delete_spring_cell( int index);
 

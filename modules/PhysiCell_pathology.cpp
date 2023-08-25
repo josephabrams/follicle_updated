@@ -384,21 +384,25 @@ std::vector<std::string> hematoxylin_and_eosin_cell_coloring( Cell* pCell )
 
 std::string formatted_minutes_to_DDHHMM( double minutes )
 {
+  //JA modified to actually take in seconds and print out hours, minutes seconds
 	static std::string output; 
 	output.resize( 1024 ); 
 	
 	int nMinutes = rint(minutes); // round( minutes ); 
 	// int nDays = (int) floor( (minutes+1e-6) / 1440.0 ); // minutes / 1440 
-	int nDays = nMinutes / 1440; 
-	nMinutes -= nDays*1440; 
+	int nDays = nMinutes / 3600; 
+	//int nDays = nMinutes / 1440; 
+	nMinutes -= nDays*3600; 
+	// nMinutes -= nDays*1440; 
 	
 	// int nHours = (int) floor( (nMinutes+1e-6) / 60.0 ); // nMinutes / 60;
 	int nHours = nMinutes / 60; 
-	double dMinutes = minutes - 60*( nDays*24 + nHours ); 
+	double dMinutes = minutes - 60*( nDays*60 + nHours ); 
 	if( dMinutes < 0 )
 	{ dMinutes = 0.0; }
-	sprintf( (char*) output.c_str(),"%d days, %d hours, and %2.2f minutes", nDays,nHours,dMinutes);
+	// sprintf( (char*) output.c_str(),"%d days, %d hours, and %2.2f minutes", nDays,nHours,dMinutes);
 	
+	sprintf( (char*) output.c_str(),"%d hours, %d minutes, and %2.2f seconds", nDays,nHours,dMinutes);
 	return output ;
 }
 
