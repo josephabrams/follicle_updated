@@ -28,7 +28,7 @@ namespace Springs{
 
 std::vector <Spring_Cell*> all_spring_cells;
 std::vector <Spring_Cell*> spring_cell_by_pCell_index;
-
+std::vector <Spring*> all_springs;
 /* eventually make its own class objects*/
 // Cryo_State_Variables::Cryo_State_Variables(int solute_num)
 // {
@@ -135,14 +135,18 @@ void Spring_Cell::initialize_mechanics()
 
 Spring_Cell::~Spring_Cell()
 {
+  std::cout<< " SPRING DELETED! from: "<< this->m_my_pCell->type_name<<"\n"; 
   delete_spring_cell(this->index);
   return;
 }
 void Spring_Cell::add_spring(Spring_Cell* other_pSCell, double spring_length)
 {
+  if(this->m_my_pCell->type==1){
+    std::cout<<" Oocyte springs made"<<"\n";
+  }
   #pragma omp critical//could speed up with private merge
   {
-    //std::cout<<"new spring made"<<std::endl;
+    // std::cout<<"new spring made"<<std::endl;
     Spring* new_spring;
     new_spring=new Spring(other_pSCell->m_my_pCell,spring_length);
     this->m_springs.push_back(new_spring);
@@ -152,6 +156,7 @@ void Spring_Cell::add_spring(Spring_Cell* other_pSCell, double spring_length)
 
 void Spring_Cell::remove_spring(Spring_Cell* other_pSCell)
 {
+    std::cout<<"SPRING REMOVED!"<<std::endl;
   //copied from removing default spring attachments
   #pragma omp critical
 	{
@@ -162,14 +167,15 @@ void Spring_Cell::remove_spring(Spring_Cell* other_pSCell)
 			
 			if( this->m_springs[i]->m_pNeighbor == other_pSCell->m_my_pCell )
 			{
-        int n = this->m_springs.size();
-        Spring* spring_ptr= this->m_springs[n-i];
-				// copy last entry to current position 
-				this->m_springs[i] = this->m_springs[n-1]; 
-        
-				// shrink by one 
-				this->m_springs.pop_back(); 
-        delete spring_ptr;
+    //     int n = this->m_springs.size();
+    //     Spring* spring_ptr= this->m_springs[n-i];
+				// // copy last entry to current position 
+				// this->m_springs[i] = this->m_springs[n-1]; 
+    //     
+				// // shrink by one 
+				// this->m_springs.pop_back(); 
+    //     delete spring_ptr;
+        this->m_springs.erase(m_springs.begin()+i);
 				found = true; 
 			}
 			i++; 
@@ -375,7 +381,11 @@ Spring::Spring(Cell* pNeighbor, double length)
   
   m_pNeighbor=pNeighbor;
   m_length=length;
-  //std::cout<< "spring constructed"<<std::endl;
+  // std::cout<< "spring constructed"<<std::endl;
+  // #pragma omp critical
+  // {
+  //   all_springs.push_back(this);
+  // }
   return;
 }
 
@@ -397,6 +407,7 @@ Spring_Cell* create_spring_cell(Cell* pCell)//( Cell* pCell,Phenotype& phenotype
 }
 void delete_spring_cell( int index)
 {
+  //eventually add code for if pCell goes out of domain or is otherwise destroyed
   #pragma omp critical
   {
 	  Spring_Cell* pDeleteMe = all_spring_cells[index]; 
@@ -404,13 +415,14 @@ void delete_spring_cell( int index)
 	  all_spring_cells[ all_spring_cells.size()-1 ]->index=index;
 	  all_spring_cells[index] = all_spring_cells[ all_spring_cells.size()-1 ];
 	  // shrink the vector
-	  all_spring_cells.pop_back();	
+	  all_spring_cells.pop_back();
+    spring_cell_by_pCell_index.erase(spring_cell_by_pCell_index.begin()+index);
 	  delete pDeleteMe; 
 	  
   }
   return; 
 }
-
+//void is_pCell_good() //check pCell is in all cells if not remove associated spring cell
 
 void Spring_Cell::two_p_update_volume()
 {

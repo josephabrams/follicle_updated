@@ -141,6 +141,8 @@ public:
 
 extern std::vector <Spring_Cell* > all_spring_cells;
 extern std::vector <Spring_Cell*> spring_cell_by_pCell_index;
+
+extern std::vector <Spring*> all_springs;
 Spring_Cell* create_spring_cell(Cell* pCell);//( Cell* pCell, Phenotype& phenotype);
 void delete_spring_cell( int index);
 

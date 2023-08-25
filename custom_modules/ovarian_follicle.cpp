@@ -90,8 +90,13 @@ void output_tzp_score(Cell* pCell, Phenotype& phenotype, double dt)
   if(pCell->type==1){
     Spring_Cell* SPcell=spring_cell_by_pCell_index[pCell->index];
     double tzp_score=(double)(SPcell->m_springs.size())/(double)(SPcell->initial_number_of_connections); 
-
+    std::ofstream ofs;
+    ofs.open ("./output/TZP_score.csv", std::ofstream::out | std::ofstream::app);
+    ofs << PhysiCell_globals.current_time<<", "<<pCell->type<<", "<<tzp_score<<"\n";
+    ofs.close();
+        
   }
+
   return;
 }
 void create_cell_types( void )
@@ -224,13 +229,14 @@ void oocyte_phenotype_rule( Cell* pCell, Phenotype& phenotype, double dt )
   if(PhysiCell_globals.current_time<dt){
     SPcell->initial_number_of_connections=SPcell->m_springs.size();
   }
+  output_tzp_score(pCell, phenotype, dt);
   int thread_id=omp_get_thread_num();
   // two_parameter_single_step(pCell,phenotype, dt);
  //  // std::cout<<" FORCE PARAM: "<< k_oocyte<<", "<<k_granulosa<<", "<<k_basement<<"\n";
   spring_cell_functions(pCell,phenotype,dt);	
   std::ofstream ofs;
-	ofs.open ("./output/2p_Test_oocyte.csv", std::ofstream::out | std::ofstream::app);
-	ofs << PhysiCell_globals.current_time<<", "<<pCell->index<<", "<<SPcell->m_my_pCell->index<<", "<< pCell<<", "<< pCell->phenotype.volume.total<<", "<<SPcell->exterior_osmolality<<", "<<SPcell->interior_osmolality <<", "<<SPcell->exterior_molarity[1]<<", "<<SPcell->interior_molarity[1]<<", "<<PhysiCell_settings.omp_num_threads<<", "<< thread_id<<"\n";
+	ofs.open ("./output/oocyte_output.csv", std::ofstream::out | std::ofstream::app);
+	ofs << PhysiCell_globals.current_time<<", "<<pCell->type_name<<", "<< pCell->phenotype.volume.total<<", "<<pCell->position[0]<<", "<<pCell->position[1]<<", "<<pCell->position[2]<<", "<<SPcell->m_springs.size() <<"\n";
 	ofs.close();
   // std::cout<<"VOLUME:"<<pCell->phenotype.volume.total<<"\n"; 
   
@@ -314,7 +320,7 @@ void create_granulosa_cell_type( void )
 	// set custom data values
 	// Parameter<double> paramD;
 	granulosa_cell.custom_data.add_variable("basement_k","unitless",k_basement);
-  granulosa_cell.custom_data.add_variable("neighborhood_radius","unitless",10);//radius beyond cell surface where connections occur
+  granulosa_cell.custom_data.add_variable("neighborhood_radius","unitless",7.5);//radius beyond cell surface where connections occur
 	granulosa_cell.custom_data[ "initial_volume" ] = parameters.doubles("gran_isotonic_volume");//523.6;
 	granulosa_cell.custom_data.add_variable("connection_length","micometers",0.5);
 	granulosa_cell.custom_data["surface_area"]= 314.159;//parameters.doubles("granulosa_Area");
@@ -351,6 +357,10 @@ void granulosa_phenotype_rule( Cell* pCell, Phenotype& phenotype, double dt )
   // else{
   //   count++;
   // }
+  std::ofstream ofs;
+	ofs.open ("./output/granulosa_output.csv", std::ofstream::out | std::ofstream::app);
+	ofs << PhysiCell_globals.current_time<<", "<<pCell->type_name<<", "<<pCell<<", "<< pCell->phenotype.volume.total<<", "<<pCell->position[0]<<", "<<pCell->position[1]<<", "<<pCell->position[2]<<SPcell->m_springs.size() <<"\n";
+	ofs.close();
   return;
 }
 void granulosa_velocity_rule( Cell* pCell, Phenotype& phenotype, double dt )
@@ -408,7 +418,7 @@ void setup_microenvironment( void )
     default_microenvironment_options.Dirichlet_condition_vector[0] = parameters.doubles("initial_HM_molarity");
     default_microenvironment_options.Dirichlet_activation_vector[0]=true;	
     default_microenvironment_options.initial_condition_vector[1]=0.00;
-    default_microenvironment_options.Dirichlet_condition_vector[1] = parameters.doubles("initial_EG_Karlsson_molarity");//parameters.doubles("initial_EG_only_molarity");//1.00;//6.66;
+    default_microenvironment_options.Dirichlet_condition_vector[1] = parameters.doubles("initial_EG_only_molarity");//parameters.doubles("initial_EG_only_molarity");//1.00;//6.66;
     default_microenvironment_options.Dirichlet_activation_vector[1]=true;	
   }
   else if(simulation_selected==2)

@@ -1059,6 +1059,9 @@ void general_voxel_bounding_box(std::vector<int> *return_bounding_box,std::vecto
 /* function just connects the spring cells doesn't check distances, this might be better places in springs.cpp     */
 void connect_spring_cells(Spring_Cell* SpCell_1, Spring_Cell* SpCell_2)
 {
+  if(SpCell_1->m_my_pCell->type==1 || SpCell_2->m_my_pCell->type==1){
+    std::cout<<"Connections made from "<< SpCell_1->m_my_pCell->type_name<<" to "<< SpCell_2->m_my_pCell->type_name<<"\n";
+  }
   double spring_length=distance_between_membranes(SpCell_1->m_my_pCell,SpCell_2->m_my_pCell);
   SpCell_1->add_spring(SpCell_2,spring_length);
   SpCell_2->add_spring(SpCell_1,spring_length);
@@ -1178,13 +1181,13 @@ void initialize_spring_connections()//also initialize mechanics and 2p vectors w
     SpCell->initialize_mechanics(); 
     //std::cout<<" spcell "<<SpCell<<std::endl;
     std::vector<Spring_Cell*> SpNeighbors={};
-    double maximum_interaction_distance=SpCell->m_my_pCell->custom_data["max_interaction_distance"];
+    double maximum_interaction_distance=SpCell->m_my_pCell->custom_data["neighborhood_radius"]+SpCell->m_my_pCell->phenotype.geometry.radius;
     spring_cells_in_neighborhood(SpCell,maximum_interaction_distance,&SpNeighbors);
    
     for (size_t j = 0; j < SpNeighbors.size(); j++)
     {
       //use center to center to establish connections to deal with oocyte-to-granulosa and granulosa-granulosa size difference
-      if (norm(SpCell->m_my_pCell->position-SpNeighbors[j]->m_my_pCell->position)<=SpCell->m_my_pCell->custom_data["neighborhood_radius"]) {
+      if (norm(SpCell->m_my_pCell->position-SpNeighbors[j]->m_my_pCell->position)<=maximum_interaction_distance) {
         connect_spring_cells(SpCell,SpNeighbors[j]);
       }
     }
