@@ -95,7 +95,7 @@ void output_tzp_score(Cell* pCell, Phenotype& phenotype, double dt)
     if (PhysiCell_globals.current_time>299.9) {
       std::ofstream ofs;
       ofs.open ("./output/TZP_score.csv", std::ofstream::out | std::ofstream::app);
-      ofs << parameters.ints("selected_simulation")<<", "<< default_microenvironment_options.Dirichlet_condition_vector<<", "<<PhysiCell_globals.current_time<<", "<<pCell->type<<", "<<tzp_score<<", "<< k_oocyte<<", "<<k_granulosa<<", "<< k_basement<<"\n";
+      ofs << parameters.ints("selected_simulation")<<", "<< default_microenvironment_options.Dirichlet_condition_vector<<PhysiCell_globals.current_time<<", "<<pCell->type<<", "<<tzp_score<<", "<< k_oocyte<<", "<<k_granulosa<<", "<< k_basement<<"\n";
       ofs.close();
     }     
   }
