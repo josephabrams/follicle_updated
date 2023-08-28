@@ -89,12 +89,15 @@ void output_tzp_score(Cell* pCell, Phenotype& phenotype, double dt)
   // check that cell is the oocyte
   if(pCell->type==1){
     Spring_Cell* SPcell=spring_cell_by_pCell_index[pCell->index];
-    double tzp_score=(double)(SPcell->m_springs.size())/(double)(SPcell->initial_number_of_connections); 
-    std::ofstream ofs;
-    ofs.open ("./output/TZP_score.csv", std::ofstream::out | std::ofstream::app);
-    ofs << PhysiCell_globals.current_time<<", "<<pCell->type<<", "<<tzp_score<<"\n";
-    ofs.close();
-        
+    double tzp_score=(double)(SPcell->m_springs.size())/(double)(SPcell->initial_number_of_connections);
+    if (SPcell->is_outside==true)
+    {tzp_score=-1.0;}
+    if (PhysiCell_globals.current_time>299.9) {
+      std::ofstream ofs;
+      ofs.open ("./output/TZP_score.csv", std::ofstream::out | std::ofstream::app);
+      ofs << parameters.ints("selected_simulation")<<", "<< default_microenvironment_options.Dirichlet_condition_vector<<", "<<PhysiCell_globals.current_time<<", "<<pCell->type<<", "<<tzp_score<<", "<< k_oocyte<<", "<<k_granulosa<<", "<< k_basement<<"\n";
+      ofs.close();
+    }     
   }
 
   return;
@@ -224,20 +227,17 @@ void oocyte_cell_rule( Cell* pCell, Phenotype& phenotype, double dt )
 }
 void oocyte_phenotype_rule( Cell* pCell, Phenotype& phenotype, double dt )
 {
-    // std::cout<<"VOLUME:"<<pCell->phenotype.volume.total<<"\n";
   Spring_Cell* SPcell=spring_cell_by_pCell_index[pCell->index];
   if(PhysiCell_globals.current_time<dt){
     SPcell->initial_number_of_connections=SPcell->m_springs.size();
   }
   output_tzp_score(pCell, phenotype, dt);
   int thread_id=omp_get_thread_num();
-  // two_parameter_single_step(pCell,phenotype, dt);
- //  // std::cout<<" FORCE PARAM: "<< k_oocyte<<", "<<k_granulosa<<", "<<k_basement<<"\n";
   spring_cell_functions(pCell,phenotype,dt);	
-  std::ofstream ofs;
-	ofs.open ("./output/oocyte_output.csv", std::ofstream::out | std::ofstream::app);
-	ofs << PhysiCell_globals.current_time<<", "<<pCell->type_name<<", "<< pCell->phenotype.volume.total<<", "<<pCell->position[0]<<", "<<pCell->position[1]<<", "<<pCell->position[2]<<", "<<SPcell->m_springs.size() <<"\n";
-	ofs.close();
+ //  std::ofstream ofs;
+	// ofs.open ("./output/oocyte_output.csv", std::ofstream::out | std::ofstream::app);
+ //  ofs <<parameters.ints("selected_simulation")<<", "<< default_microenvironment_options.Dirichlet_condition_vector<<", "<<PhysiCell_globals.current_time<<", "<<pCell->type_name<<", "<< pCell->phenotype.volume.total<<", "<<pCell->position[0]<<", "<<pCell->position[1]<<", "<<pCell->position[2]<<", "<<SPcell->m_springs.size() <<", "<<k_oocyte<<", "<<k_granulosa<<", "<<k_basement<<"\n";
+	// ofs.close();
   // std::cout<<"VOLUME:"<<pCell->phenotype.volume.total<<"\n"; 
   
 	return;
@@ -357,10 +357,10 @@ void granulosa_phenotype_rule( Cell* pCell, Phenotype& phenotype, double dt )
   // else{
   //   count++;
   // }
-  std::ofstream ofs;
-	ofs.open ("./output/granulosa_output.csv", std::ofstream::out | std::ofstream::app);
-	ofs << PhysiCell_globals.current_time<<", "<<pCell->type_name<<", "<<pCell<<", "<< pCell->phenotype.volume.total<<", "<<pCell->position[0]<<", "<<pCell->position[1]<<", "<<pCell->position[2]<<SPcell->m_springs.size() <<"\n";
-	ofs.close();
+ //  std::ofstream ofs;
+	// ofs.open ("./output/granulosa_output.csv", std::ofstream::out | std::ofstream::app);
+	// ofs << parameters.ints("selected_simulation")<<", "<< default_microenvironment_options.Dirichlet_condition_vector<<", "<<PhysiCell_globals.current_time<<", "<<pCell->type_name<<", "<<pCell<<", "<< pCell->phenotype.volume.total<<", "<<pCell->position[0]<<", "<<pCell->position[1]<<", "<<pCell->position[2]<<SPcell->m_springs.size() <<", "<<k_oocyte<<", "<<k_granulosa<<", "<<k_basement<<", "<<SPcell->is_basement_connected<<"\n";
+	// ofs.close();
   return;
 }
 void granulosa_velocity_rule( Cell* pCell, Phenotype& phenotype, double dt )

@@ -1059,9 +1059,9 @@ void general_voxel_bounding_box(std::vector<int> *return_bounding_box,std::vecto
 /* function just connects the spring cells doesn't check distances, this might be better places in springs.cpp     */
 void connect_spring_cells(Spring_Cell* SpCell_1, Spring_Cell* SpCell_2)
 {
-  if(SpCell_1->m_my_pCell->type==1 || SpCell_2->m_my_pCell->type==1){
-    std::cout<<"Connections made from "<< SpCell_1->m_my_pCell->type_name<<" to "<< SpCell_2->m_my_pCell->type_name<<"\n";
-  }
+  // if(SpCell_1->m_my_pCell->type==1 || SpCell_2->m_my_pCell->type==1){
+    // std::cout<<"Connections made from "<< SpCell_1->m_my_pCell->type_name<<" to "<< SpCell_2->m_my_pCell->type_name<<"\n";
+  // }
   double spring_length=distance_between_membranes(SpCell_1->m_my_pCell,SpCell_2->m_my_pCell);
   SpCell_1->add_spring(SpCell_2,spring_length);
   SpCell_2->add_spring(SpCell_1,spring_length);
@@ -1171,7 +1171,7 @@ void spring_cells_in_neighborhood(Spring_Cell* SpCell, double maximum_interactio
 }
 void initialize_spring_connections()//also initialize mechanics and 2p vectors which probably should be done elsewhere
 {
-  std::cout<<"initializing connections!"<<"\n"; 
+  // std::cout<<"initializing connections!"<<"\n"; 
   //using modified moore neighborhood search for "spring cell" neighbors and connect them with spring objects
   for(size_t i=0;i<all_spring_cells.size();i++) //loop through all spring cells
   {
@@ -1309,7 +1309,7 @@ void update_exterior_concentrations(Spring_Cell* SPcell)
 }
 void initialize_spring_cells()//make all cells spring cells
 {
-  std::cout<<"Initializing Spring Cells"<<"\n";
+  // std::cout<<"Initializing Spring Cells"<<"\n";
   //encapsulate all cells in the super class spring cell
   //find initial spring lengths and connect neighbors
   //set up basement membrane and connected exterior cells
@@ -1393,7 +1393,8 @@ void basement_membrane_mechanics(Spring_Cell* SpCell, double basement_membrane_r
       if(current_length+SpCell->m_my_pCell->phenotype.geometry.radius+default_microenvironment_options.dx<0)
       {
        //updated to use outer_radius from basement membrane function
-        std::cout<< "WARNING!! CELL PASSED THROUGH BASEMENT MEMBRANE!"<<std::endl;
+      //  std::cout<< "WARNING!! CELL PASSED THROUGH BASEMENT MEMBRANE!"<<std::endl;
+        SpCell->is_outside=true; 
       } 
       current_length=current_length-2.0;
       std::vector<double> force(3,0.0);

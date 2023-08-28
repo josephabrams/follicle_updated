@@ -363,7 +363,8 @@ data-cleanup:
 	rm -rf ./output
 	mkdir ./output
 	touch ./output/empty.txt
-
+	cp ./oocyte_output_template.csv ./output/oocyte_output.csv
+	cp ./granulosa_output_template.csv ./output/granulosa_output.csv
 # archival 
 
 checkpoint: 
