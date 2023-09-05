@@ -1,14 +1,17 @@
 #include "./ovarian_follicle.h"
 #include "./springs.h"
 #include "./follicle_utilities.h"
+#include <iostream>
 #include <omp.h>
-
+#include <algorithm>
 // Global Variables
 #define PI 3.14159265
 #define R 0.08205//granulosa (10^-3 J/mole*k)
 using namespace Springs;
 Cell_Definition oocyte_cell;
 Cell_Definition granulosa_cell;
+Cell_Definition hepato_cell;
+
 std::string output_filename;
 
 double k_granulosa=0.1;
@@ -71,17 +74,17 @@ void spring_cell_functions(Cell* pCell, Phenotype& phenotype, double dt)
   //2P reaction terms and volume change
   //update internal concentations and spring cell values
   //pass it all back to pCell
-  two_parameter_single_step(pCell,phenotype,dt);
+  // two_parameter_single_step(pCell,phenotype,dt);
   //sum velocities from non_connected_neighbor_pressure
   //sum velocities from intercellular connections
   //sum velocities from basement membrane 
   update_all_forces(pCell,dt,pCell->custom_data["spring_constant"]);
   
   // if oocyte break connections that are past the max breakage distance
-  if(pCell->type==1){
+  // if(pCell->type==1){
     //function checks distance
-    break_TZPs(SPcell, pCell->custom_data["max_breakage_distance"]);
-  }
+    // break_TZPs(SPcell, pCell->custom_data["max_breakage_distance"]);
+  // }
   return;
 }
 void output_tzp_score(Cell* pCell, Phenotype& phenotype, double dt)
@@ -172,9 +175,82 @@ void create_cell_types( void )
   // create the cell types
 	create_oocyte_cell_type();
 	create_granulosa_cell_type();
+  create_hepato_cell_type();
 	return;
 }
 //oocyte////////////////////
+void create_hepato_cell_type(void)
+{
+	hepato_cell = cell_defaults;
+  hepato_cell.name = "hepato cell";
+  hepato_cell.type = 3;
+	// turn off proliferation but turn on live cell;
+	int cycle_start_index = live.find_phase_index( PhysiCell_constants::live );
+	int cycle_end_index = live.find_phase_index( PhysiCell_constants::live );
+	hepato_cell.phenotype.cycle.data.transition_rate(cycle_start_index,cycle_end_index) = 0.0;
+  int apoptosis_index = cell_defaults.phenotype.death.find_death_model_index( PhysiCell_constants::apoptosis_death_model );
+	//
+	hepato_cell.phenotype.secretion.uptake_rates[0] *=0;
+	hepato_cell.phenotype.secretion.secretion_rates[0] *=0;
+	hepato_cell.phenotype.secretion.uptake_rates[1] *=0;
+	hepato_cell.phenotype.secretion.secretion_rates[1] *=0;
+	hepato_cell.phenotype.secretion.uptake_rates[2] *=0;
+	hepato_cell.phenotype.secretion.secretion_rates[2] *=0;
+	// set functions to use custom functions note that position, and radius are still updated within the core code
+  hepato_cell.functions.update_phenotype = hepato_phenotype_rule;
+  hepato_cell.functions.custom_cell_rule = hepato_cell_rule;
+  hepato_cell.functions.update_velocity = hepato_velocity_rule;
+	// set custom data values
+	hepato_cell.custom_data.add_variable("cell_k","unitless",k_oocyte);//oocyte spring constant
+  hepato_cell.custom_data.add_variable("neighborhood_radius","um",15);//radius beyond cell surface where connections occur
+  hepato_cell.custom_data.add_variable("allowed_overlap","um",2);//radius beyond cell surface where connections occur
+	hepato_cell.custom_data[ "initial_volume" ] = 14137.17;//parameters.doubles("oocyte_isotonic_volume");//817283 um^3
+	/*
+		DMSO_Lp 1.68 Immature 1.01 Mature
+		DMSO_Ps .15 immature .24 mature
+		PROH_Lp .72          .86
+		PROH_Ps .31          .56
+	*/
+	hepato_cell.custom_data["surface_area"]=2727.43;//43411.1;
+	hepato_cell.custom_data["R"]= R;
+	hepato_cell.custom_data["Temperature"]= 293.15;// uh I should get all the temperature stuff lined up
+	hepato_cell.custom_data["Vb_fraction"]=.288;
+  hepato_cell.custom_data.add_variable("basement_k","unitless",k_basement);
+	hepato_cell.custom_data.add_variable("spring_constant","N/m",k_oocyte);
+	hepato_cell.custom_data.add_variable("max_breakage_distance","um",10);
+  hepato_cell.custom_data.add_variable("max_interaction_distance","unitless",15);
+	return;
+}
+int counting_time=0;
+void hepato_cell_rule( Cell* pCell, Phenotype& phenotype, double dt )
+{
+    // std::cout<<"VOLUME:"<<pCell->phenotype.volume.total<<"\n"; 
+  //std::vector <double> basement_membrane_center={0.0,0.0,0.0};
+	return;
+}
+void hepato_phenotype_rule( Cell* pCell, Phenotype& phenotype, double dt )
+{
+  Spring_Cell* SPcell=spring_cell_by_pCell_index[pCell->index];
+  // two_parameter_single_step(pCell,phenotype, dt);
+  // if(PhysiCell_globals.current_time<dt){
+    // SPcell->initial_number_of_connections=SPcell->m_springs.size();
+  // }
+  // output_tzp_score(pCell, phenotype, dt);
+  // int thread_id=omp_get_thread_num();
+  spring_cell_functions(pCell,phenotype,dt);	
+ //  std::ofstream ofs;
+	// ofs.open ("./output/oocyte_output.csv", std::ofstream::out | std::ofstream::app);
+ //  ofs <<parameters.ints("selected_simulation")<<", "<< default_microenvironment_options.Dirichlet_condition_vector<<", "<<PhysiCell_globals.current_time<<", "<<pCell->type_name<<", "<< pCell->phenotype.volume.total<<", "<<pCell->position[0]<<", "<<pCell->position[1]<<", "<<pCell->position[2]<<", "<<SPcell->m_springs.size() <<", "<<k_oocyte<<", "<<k_granulosa<<", "<<k_basement<<"\n";
+	// ofs.close();
+  // std::cout<<"VOLUME:"<<pCell->phenotype.volume.total<<"\n"; 
+  
+	return;
+
+}
+void hepato_velocity_rule( Cell* pCell, Phenotype& phenotype, double dt )
+{
+	return;
+}
 void create_oocyte_cell_type(void)
 {
 	oocyte_cell = cell_defaults;
@@ -218,7 +294,6 @@ void create_oocyte_cell_type(void)
 	return;
 }
 
-int counting_time=0;
 void oocyte_cell_rule( Cell* pCell, Phenotype& phenotype, double dt )
 {
     // std::cout<<"VOLUME:"<<pCell->phenotype.volume.total<<"\n"; 
@@ -228,12 +303,13 @@ void oocyte_cell_rule( Cell* pCell, Phenotype& phenotype, double dt )
 void oocyte_phenotype_rule( Cell* pCell, Phenotype& phenotype, double dt )
 {
   Spring_Cell* SPcell=spring_cell_by_pCell_index[pCell->index];
-  if(PhysiCell_globals.current_time<dt){
-    SPcell->initial_number_of_connections=SPcell->m_springs.size();
-  }
-  output_tzp_score(pCell, phenotype, dt);
-  int thread_id=omp_get_thread_num();
-  spring_cell_functions(pCell,phenotype,dt);	
+  // two_parameter_single_step(pCell,phenotype, dt);
+  // if(PhysiCell_globals.current_time<dt){
+    // SPcell->initial_number_of_connections=SPcell->m_springs.size();
+  // }
+  // output_tzp_score(pCell, phenotype, dt);
+  // int thread_id=omp_get_thread_num();
+  // spring_cell_functions(pCell,phenotype,dt);	
  //  std::ofstream ofs;
 	// ofs.open ("./output/oocyte_output.csv", std::ofstream::out | std::ofstream::app);
  //  ofs <<parameters.ints("selected_simulation")<<", "<< default_microenvironment_options.Dirichlet_condition_vector<<", "<<PhysiCell_globals.current_time<<", "<<pCell->type_name<<", "<< pCell->phenotype.volume.total<<", "<<pCell->position[0]<<", "<<pCell->position[1]<<", "<<pCell->position[2]<<", "<<SPcell->m_springs.size() <<", "<<k_oocyte<<", "<<k_granulosa<<", "<<k_basement<<"\n";
@@ -343,8 +419,8 @@ int count=0;
 void granulosa_phenotype_rule( Cell* pCell, Phenotype& phenotype, double dt )
 {
   Spring_Cell* SPcell=spring_cell_by_pCell_index[pCell->index];
-  int thread_id=omp_get_thread_num();
-  // two_parameter_single_step(pCell,phenotype, dt);
+  // int thread_id=omp_get_thread_num();
+  //two_parameter_single_step(pCell,phenotype, dt);
  //  // std::cout<<" FORCE PARAM: "<< k_oocyte<<", "<<k_granulosa<<", "<<k_basement<<"\n";
   spring_cell_functions(pCell,phenotype,dt);
   // if(count%100==0){
@@ -581,8 +657,19 @@ void setup_microenvironment( void )
 	default_microenvironment_options.outer_Dirichlet_conditions = false;
 	initialize_microenvironment();
   //dirichlet_nodes_radius is the CPA diffusion to tissue/cell distance, set close to follicle or oocyte for rapid change in exterior conditions
-  double dirichlet_nodes_radius=95.0;
-  activate_nodes(dirichlet_nodes_radius);//place the Dirichlet nodes at a radius around the follicle  
+  double dirichlet_nodes_radius=400.0;
+
+  std::vector<std::vector<double>> hole_centers={{0,0,0},{250,300,0},{-250,300,0},
+    {300,0,0},{-300,0,0},{250,-300,0},{-250,-300,0}};
+  std::vector<double>hole_radii={50,25,25,25,25,25,25};
+  std::vector<std::vector<double>> hole_dirchlet={default_microenvironment_options.Dirichlet_condition_vector,{0.155,0},{0.155,0},{0.155,0},{0.155,0},{0.155,0},{0.155,0}};
+  // activate_nodes(dirichlet_nodes_radius);//place the Dirichlet nodes at a radius around the follicle 
+ for (int j=0;j<hole_dirchlet.size();j++)
+  {
+    std::cout<<"HOLE DIRCHLET: "<< hole_dirchlet[j]<<"\n";
+    set_dirchlet_nodes_cylinder(hole_radii[j],50,hole_centers[j],hole_dirchlet[j]); 
+
+  }
 	//total_uptake.resize(microenvironment.mesh.voxels.size());
 	//all_total_uptakes.resize(number_of_permeating_solutes,total_uptake);
 	return;
@@ -770,12 +857,225 @@ void setup_4_granulosa_test_case(void)
 	//print_voxels_for_quick_plotting(pCell_granulosa4b,basement_membrane_voxels, basement_membrane_voxels);
 	return;
 }
+std::vector<std::vector<double>> create_polygon_positions(double cell_radius,std::vector<std::vector<double>> polygon_points, std::vector<std::vector<double>> hole_centers, std::vector<double> hole_radius)//wedge between y=2x and y=-2x
+{
+ //  std::vector<double> x_points(polygon_points.size(),0.0);
+ //  std::vector<double> y_points(polygon_points.size(),0.0);
+ //  std::vector<double> z_points(polygon_points.size(),0.0);
+ //  for (int i=0; i<polygon_points.size(); i++)
+ //  {
+ //     x_points[i]=polygon_points[i][0];
+ //     y_points[i]=polygon_points[i][1];
+ //     z_points[i]=polygon_points[i][2];
+ //     }
+ //  #pragma omp critical
+ //  {
+ //    std::sort(x_points.begin(),x_points.end());
+ //    std::sort(y_points.begin(),y_points.end());
+ //    std::sort(z_points.begin(),z_points.end());
+ //  }
+ //  int x_middle=x_points.size()/2;
+ //  int y_middle=y_points.size()/2;
+ //  int z_middle=z_points.size()/2;
+	//
+ //  double sphere_radius=100;
+ //  double inner_radius=0;
+	std::vector<std::vector<double>> cells;
+  std::vector<double> v1={0,0,0};
+  cells.push_back(v1);	
+  // int xc=0,yc=0,zc=0;
+	// double x_spacing= cell_radius*sqrt(3);
+	// double y_spacing= cell_radius*2;
+	// double z_spacing= cell_radius*sqrt(3);
+	// double z_bottom=-20;
+	// double z_top=20;
+	// std::vector<double> tempPoint(3,0.0);
+	// // std::vector<double> cylinder_center(3,0.0);
+ //  //non-cannoical for loops - I take it setup is not parrallel 
+	// for(double z=z_points.front(); z<z_points.back(); z+=z_spacing, zc++)
+	// {
+	// 	for(double x=x_points.front();x<x_points.back();x+=x_spacing, xc++)
+	// 	{
+	// 		for(double y=y_points.front();y<y_points.back();y+=y_spacing, yc++)
+	// 		{
+	// 			tempPoint[0]=x + (zc%2) * 0.5 * cell_radius;
+	// 			tempPoint[1]=y + (xc%2) * cell_radius;
+	// 			tempPoint[2]=z;
+	//
+	// 			if(sqrt(norm_squared(tempPoint))>)
+	// 			{
+	// 				if(sqrt(norm_squared(tempPoint))> 0)//inner radius set to 0 for now
+	// 				{
+	// 					if(tempPoint[0]<(tempPoint[1]/2) && tempPoint[0]>(-tempPoint[1]/2) && tempPoint[1]>0)
+	// 					{
+	// 						// if(norm(hole_center-tempPoint)>hole_radius)
+	// 						// {
+	// 							cells.push_back(tempPoint);	
+	// 						// }
+	// 						
+	// 					}
+	// 					/*
+ //                        			std::ofstream ofs;
+	// 					ofs.open ("temp_points_location.csv", std::ofstream::out | std::ofstream::app);
+	// 					ofs <<(sqrt(norm_squared(tempPoint))-30)<<"," <<"\n";
+	// 					ofs.close();
+	// 					*/
+	// 						
+	// 				}
+	// 			}
+	// 		}
+	//
+	// 	}
+	// }
+	return cells;
+
+}
+std::vector<std::vector<double>> create_hepato_positions(double cell_radius,
+                                                         double sphere_radius, 
+                                                         std::vector<std::vector<double>> hole_centers, 
+                                                         std::vector<double> hole_radii,
+                                                         std::vector<Cell*> sinusoids
+                                                         )
+{
+	std::vector<std::vector<double>> cells;
+	int xc=0,yc=0,zc=0;
+	double x_spacing= cell_radius*sqrt(3);
+	double y_spacing= cell_radius*2;
+	double z_spacing= cell_radius*sqrt(3);
+	double z_bottom=-20;
+	double z_top=20;
+	std::vector<double> tempPoint(3,0.0);
+	// std::vector<double> cylinder_center(3,0.0);
+
+	for(double z=z_bottom; z<z_top; z+=z_spacing, zc++)
+	{
+		for(double x=-sphere_radius;x<sphere_radius;x+=x_spacing, xc++)
+		{
+			for(double y=-sphere_radius;y<sphere_radius;y+=y_spacing, yc++)
+			{
+				tempPoint[0]=x + (zc%2) * 0.5 * cell_radius;
+				tempPoint[1]=y + (xc%2) * cell_radius;
+				tempPoint[2]=z;
+				cells.push_back(tempPoint);		
+							
+	
+			}
+
+		}
+	}
+  for(int i=0; i<cells.size();i++ )
+  {
+      std::cout<<cells.size()<<"\n";
+    for(int j=0; j<hole_centers.size(); j++)
+    {
+      while(norm(cells[i]-hole_centers[j])<=(hole_radii[j]))
+      {
+        cells.erase(cells.begin()+i);
+      }
+    }
+  
+  }
+  for(int k=0; k<cells.size();k++ )
+  {
+    for(int m=0; m<sinusoids.size(); m++)
+    {
+
+      while(norm(cells[k]-sinusoids[m]->position)<
+        (sinusoids[m]->phenotype.geometry.radius+cell_radius-2))
+      {
+
+        cells.erase(cells.begin()+k);
+      }
+    }
+  }
+	return cells;
+
+}
+
+
+
+std::vector<std::vector<double>> create_cell_disk_wedge_positions(double cell_radius, double sphere_radius, double inner_radius, std::vector<double> hole_center, double hole_radius)//wedge between y=2x and y=-2x
+{
+	std::vector<std::vector<double>> cells;
+	int xc=0,yc=0,zc=0;
+	double x_spacing= cell_radius*sqrt(3);
+	double y_spacing= cell_radius*2;
+	double z_spacing= cell_radius*sqrt(3);
+	double z_bottom=-20;
+	double z_top=20;
+	std::vector<double> tempPoint(3,0.0);
+	// std::vector<double> cylinder_center(3,0.0);
+
+	for(double z=z_bottom; z<z_top; z+=z_spacing, zc++)
+	{
+		for(double x=-sphere_radius;x<sphere_radius;x+=x_spacing, xc++)
+		{
+			for(double y=-sphere_radius;y<sphere_radius;y+=y_spacing, yc++)
+			{
+				tempPoint[0]=x + (zc%2) * 0.5 * cell_radius;
+				tempPoint[1]=y + (xc%2) * cell_radius;
+				tempPoint[2]=z;
+
+				if(sqrt(norm_squared(tempPoint))< sphere_radius)
+				{
+					if(sqrt(norm_squared(tempPoint))> 0)//inner radius set to 0 for now
+					{
+						if(tempPoint[0]<(tempPoint[1]/2) && tempPoint[0]>(-tempPoint[1]/2) && tempPoint[1]>0)
+						{
+							if(norm(hole_center-tempPoint)>hole_radius)
+							{
+								cells.push_back(tempPoint);	
+							}
+							
+						}
+						/*
+                        			std::ofstream ofs;
+						ofs.open ("temp_points_location.csv", std::ofstream::out | std::ofstream::app);
+						ofs <<(sqrt(norm_squared(tempPoint))-30)<<"," <<"\n";
+						ofs.close();
+						*/
+							
+					}
+				}
+			}
+
+		}
+	}
+	return cells;
+
+}
+void setup_wedge(void)
+{
+    double initial_granulosa_radius= 5;
+    double initial_oocyte_radius=54;
+		double initial_overlap=.1;//representation of the initial packing density from config eventually
+		double cell_spacing = initial_granulosa_radius-initial_overlap;//slight overlap to represent cells up against each other better variable name
+		
+		double wedge_radius=250;
+		double hole_radius=30;
+    std::vector<double> hole={0.0,5.0,3.0};
+		//create granulosa wedge
+		std::cout << "\tPlacing granulosa cells ... " << "\n";
+		std::vector<std::vector<double>> granulosa_positions = create_cell_disk_wedge_positions(cell_spacing,wedge_radius,initial_oocyte_radius,hole,hole_radius);//wedge hopefully
+		std::cout << "creating " << granulosa_positions.size() << " wedge " << "\n";
+		//ofs.open ("initial_granulosa_size.csv", std::ofstream::out | std::ofstream::trunc);
+		for( int i=0; i < granulosa_positions.size(); i++ )
+		{
+			Cell* pCell_granulosa;//placed this inside of the loop since it makes more sense to me
+			pCell_granulosa = create_cell(granulosa_cell); //
+			pCell_granulosa->assign_position( granulosa_positions[i] );
+			pCell_granulosa->set_total_volume(pCell_granulosa->custom_data["initial_volume"]);
+		}
+	return;
+}
+
 void setup_tissue( void )
 {
 	//colored_cell_list.resize(0);
-
+  setup_liver();
+  // setup_curve();
   //select tissue to set up:
-	setup_secondary_stage_follicle();
+	// setup_secondary_stage_follicle();
 	//setup_wedge();
 	//setup_toy_granulosa_model();
   // setup_just_oocyte();	
@@ -784,4 +1084,351 @@ void setup_tissue( void )
 	//setup_n_layer_follicle(7);
 
 	return;
+}
+
+
+void setup_curve(){
+  bez_curve_3 test;
+  test.initalize(0);
+  std::vector<double> p1={0,0};
+  std::vector<double> p2={150,50};
+  std::vector<double> p3={300,90};
+  std::vector<double> p4={210,150};
+  std::vector<double> p5={0,0,0.0};
+  test.set_end_points(p1,p4);
+  test.set_control_points(p2,p3);
+  std::vector<std::vector<double>> test_points={};
+  double t_ratio=0.05; 
+  test.points_on_me(t_ratio,&test_points);
+  std::vector<std::vector<double>> test_locations={};
+  for (int j=0; j<test_points.size(); j++) {
+    // std::cout<<test_points[j]<<"\n";
+  }
+  std::vector<double>t_points={0.01};
+  int number_of_ts=50;
+  for (int k=0; k<number_of_ts; k++) {
+    t_points.push_back(t_points[k]+(1/double(number_of_ts)));
+    std::cout<<t_points[k]<<"\n";
+  }
+  Cell* a;
+	a = create_cell(granulosa_cell); //
+  a->assign_position(p5);
+  a->set_total_volume(a->custom_data["initial_volume"]);
+  #pragma omp critical
+  {
+    cells_on_bez(t_points,&test,&test_locations,5);
+    // cells_on_path(test_points,&test_locations,a);
+  }
+  for(int i=0;i<test_locations.size();i++)
+  {
+    std::cout<<"locations: "<< test_locations[0]<<"\n";
+    Cell* gran;
+    gran= create_cell(granulosa_cell);
+    gran->assign_position(test_locations[i]);
+    gran->set_total_volume(gran->custom_data["initial_volume"]);
+  }
+  return;
+}
+
+
+
+
+
+poly_corner_2D::poly_corner_2D(std::vector<double> position)
+{
+  std::vector<double> my_position;
+  std::vector<double> connected_point_1;
+  std::vector<double> connected_point_2;
+  std::vector<double> segment_1; 
+  std::vector<double> segment_2; 
+  void calculate_connections(std::vector<std::vector<double>> &points);
+  void calculate_segments();
+  bool is_within(std::vector<double> polygon_center_point);
+
+}
+
+polygon::polygon(int number_of_sides){
+return;
+}
+void polygon::populate(std::vector<poly_corner_2D*> corner_points)
+{
+  return;
+}
+void bez_curve_3::initalize(int number){
+  index=number;
+  end_points.resize(2,std::vector<double>(2,0.0));
+  control_points.resize(2,std::vector<double>(2,0.0));
+  ratios={1,1,1,1};
+  return;
+};
+void bez_curve_3::set_end_points(std::vector<double> p1,std::vector<double> p2){
+  this->end_points={p1,p2};  
+  return;
+}
+void bez_curve_3::set_control_points(std::vector<double> p1,std::vector<double> p2){
+  this->control_points={p1,p2}; 
+  return;
+}
+void bez_curve_3::set_ratios(double r1,double r2, double r3, double r4){
+  this->ratios={r1,r2,r3,r4}; 
+  return;
+}
+void bez_curve_3::get_point(double t, std::vector<double> *return_point){
+    double X=this->end_points[0][0]*(pow((1-t),3))*this->ratios[0]+
+              3*this->control_points[0][0]*(pow((1-t),2))*t*this->ratios[1]+
+              3*this->control_points[1][0]*(1-t)*(pow(t,2))*this->ratios[2]+
+              this->end_points[1][0]*(pow(t,3))*this->ratios[3];
+    double Y=this->end_points[0][1]*(pow((1-t),3))*this->ratios[0]+
+              3*this->control_points[0][1]*(pow((1-t),2))*t*this->ratios[1]+
+              3*this->control_points[1][1]*(1-t)*(pow(t,2))*this->ratios[2]+
+              this->end_points[1][1]*(pow(t,3))*this->ratios[3];
+    std::vector<double> point={X,Y};
+    *return_point=point;
+  return;
+}
+void bez_curve_3::points_on_curve(double &t_values_as_ratio,std::vector<std::vector<double>> &end_points, 
+                     std::vector<std::vector<double>> &control_points, 
+                     std::vector<double> &ratios, 
+                     std::vector<std::vector<double>> *return_points){
+ for(size_t i=0;i<100;i+=int(t_values_as_ratio*100))
+  {
+    double t=double(i)/100;
+    double X=end_points[0][0]*(pow((1-t),3))*ratios[0]+3*control_points[0][0]*(pow((1-t),2))*t*ratios[1]
+              +3*control_points[1][0]*(1-t)*(pow(t,2))*ratios[2]+end_points[1][0]*(pow(t,3))*ratios[3];
+    double Y=end_points[0][1]*(pow((1-t),3))*ratios[0]+3*control_points[0][1]*(pow((1-t),2))*t*ratios[1]
+              +3*control_points[1][1]*(1-t)*(pow(t,2))*ratios[2]+end_points[1][1]*(pow(t,3))*ratios[3];
+    std::vector<double> point={X,Y};
+    return_points->push_back(point);
+  }
+  return;
+}
+void bez_curve_3::points_on_me(double& t_values_as_ratio,std::vector<std::vector<double>> *return_points){
+  this->points_on_curve(t_values_as_ratio,this->end_points, this->control_points, 
+                     this->ratios, return_points);
+  
+  return;
+}
+void cells_on_bez(std::vector<double> t_values,bez_curve_3 *bez, std::vector<std::vector<double>>* cell_positions, double radius)
+{
+  double spacing=1;
+  std::vector<double> xy_point={}; 
+  std::vector<double> next_point={}; 
+  double t=0.01;
+  double increment=0.1;
+  int count=0;
+  while(t<1 && count <1000)
+  {
+    bez->get_point( t,&xy_point);
+    bez->get_point((t+increment), &next_point);
+    int count=0;
+    if(norm(next_point-xy_point)>((radius)+spacing))
+    {
+      increment=increment-(increment/2); 
+    }
+    else if(norm(next_point-xy_point)<((radius-spacing)))
+    {
+      increment=increment+(increment/2);
+    }
+    else {
+      cell_positions->push_back(xy_point);
+      t=t+increment;
+    }
+
+    count++; 
+  }
+//approximate curvy path with line segments, if segment is smaller than a cell, place cells at end points
+  std::cout<<"FINISHED WITH "<<bez->index<<"\n";
+  return;
+}
+
+void cells_on_path(std::vector<std::vector<double>> path_points, std::vector<std::vector<double>>* cell_positions, Cell* pCell)
+{
+  std::vector<double> line_start(2,0.0); 
+  std::vector<double> line_end(2,0.0); 
+  for(size_t i=0; i<(path_points.size()-1);i+=2)
+  {
+    std::cout<<"TEST: "<<i<<"\n";
+    line_start=path_points[i];
+    line_end=path_points[i+1];
+    std::cout<<i<<": "<<line_start<<line_end<<"\n";
+    cell_positions->push_back(line_start);
+    cell_positions->push_back(line_end);
+    // cells_on_line(line_start,line_end,cell_positions,pCell);  
+  }
+//approximate curvy path with line segments, if segment is smaller than a cell, place cells at end points
+  return;
+}
+void cells_on_line(std::vector<double>&line_start,std::vector<double>&line_end, std::vector<std::vector<double>>* cell_positions, Cell* pCell)//place cells along line segements
+{
+  double length=norm(line_end-line_start);
+  if (length<pCell->phenotype.geometry.radius) {
+    cell_positions->push_back(line_start);
+    cell_positions->push_back(line_end);
+    return;
+  }
+  else{
+    double cutoff=(pCell->phenotype.geometry.radius-pCell->custom_data["allowed_overlap"]);
+    double slope=(line_end[1]-line_start[1])/(line_end[0]-line_start[0]);
+    double b= line_start[1]-(line_start[0]*slope);
+    double spacing=pCell->phenotype.geometry.radius-pCell->custom_data["allowed_overlap"];
+    double number_of_centers=((line_end[0]-line_start[0])/spacing)+1;
+    double length_remainder= number_of_centers-std::floor(number_of_centers);
+    int number_of_cells= int(number_of_centers);
+    if(length_remainder>cutoff)
+    {
+      number_of_cells=int(number_of_centers)+1;
+    }
+    double new_x=line_start[0];
+    double new_y=line_start[1];
+    std::vector<double> point(2,0.0);
+    for(int i=0; i<number_of_cells;i++){
+      point={new_x,new_y};
+      cell_positions->push_back(point);
+      double dx=new_x;
+      new_x+=(length/number_of_cells)*i;  
+      new_y= new_x*slope+b;
+    }
+  
+  }
+
+  ///cell positions += with push_back
+  
+  return;
+}
+void subtract_overlapping_cells(){
+  //can almost certainly use voxels to speed up// if center-to_center with other cell < (radius-overlap) remove it from the cell_list
+  return;
+}
+void add_venule(std::vector<double> position, double radius){return;}
+void add_portals(std::vector<std::vector<double>> positions, double radius){return;}
+void add_sinusoids(double density){return;}
+void setup_liver(){
+  std::vector<Cell*> sinusoids={};
+  std::vector<std::vector<double>> hole_centers={{0,0,0},{250,300,0},{-250,300,0},
+    {300,0,0},{-300,0,0},{250,-300,0},{-250,-300,0}};
+  std::vector<double>hole_radii={50,25,25,25,25,25,25};
+  bez_curve_3 one;
+  one.initalize(1);
+  one.set_end_points({50,50}, {250,300});
+  one.set_control_points({0,100},{25,0});
+  bez_curve_3 two;
+  two.set_end_points({-50,-50}, {-250,-300});
+  two.set_control_points({0,-80},{-200,0});
+  two.initalize(2);
+  bez_curve_3 three;
+  three.set_end_points({-50,50}, {-250,300});
+  three.set_control_points({0,100},{-25,0});
+  three.initalize(3);
+  bez_curve_3 four;
+  four.set_end_points({50,-50}, {250,-300});
+  four.set_control_points({0,-90},{10,0});
+  four.initalize(4);
+  bez_curve_3 five; 
+  five.set_end_points({50,0}, {300,0});
+  five.set_control_points({45,45},{90,-20});
+  five.initalize(5);
+  bez_curve_3 six;
+  six.set_end_points({-50,0}, {-300,0});
+  six.set_control_points({-45,-45},{-90,20});
+  six.initalize(6);
+  std::vector<double>t_points={0.01};
+  int number_of_ts=50;
+  for (int k=0; k<number_of_ts-1; k++) {
+    t_points.push_back(t_points[k]+(1/double(number_of_ts)));
+    // std::cout<<t_points[k]<<"\n";
+  }
+  std::vector<std::vector<double>> one_locations={};
+  std::vector<std::vector<double>> two_locations={};
+  std::vector<std::vector<double>> three_locations={};
+  std::vector<std::vector<double>> four_locations={};
+  std::vector<std::vector<double>> five_locations={};
+  std::vector<std::vector<double>> six_locations={};
+  std::vector<std::vector<double>> seven_locations={};
+  #pragma omp critical
+  {
+    cells_on_bez(t_points,&one,&one_locations,5);
+    // cells_on_path(test_points,&test_locations,a);
+  }
+  for(int i=0;i<one_locations.size();i++)
+  {
+    Cell* gran;
+    gran= create_cell(granulosa_cell);
+    gran->assign_position(one_locations[i]);
+    gran->set_total_volume(gran->custom_data["initial_volume"]);
+  }
+  #pragma omp critical
+  {
+    cells_on_bez(t_points,&two,&two_locations,5);
+    // cells_on_path(test_points,&test_locations,a);
+  }
+  for(int i=0;i<two_locations.size();i++)
+  {
+    Cell* gran;
+    gran= create_cell(granulosa_cell);
+    gran->assign_position(two_locations[i]);
+    gran->set_total_volume(gran->custom_data["initial_volume"]);
+  }
+  #pragma omp critical
+  {
+    cells_on_bez(t_points,&three,&three_locations,5);
+    // cells_on_path(test_points,&test_locations,a);
+  }
+  for(int i=0;i<three_locations.size();i++)
+  {
+    Cell* gran;
+    gran= create_cell(granulosa_cell);
+    gran->assign_position(three_locations[i]);
+    gran->set_total_volume(gran->custom_data["initial_volume"]);
+  }
+  #pragma omp critical
+  {
+    cells_on_bez(t_points,&four,&four_locations,5);
+    // cells_on_path(test_points,&test_locations,a);
+  }
+  for(int i=0;i<four_locations.size();i++)
+  {
+    Cell* gran;
+    gran= create_cell(granulosa_cell);
+    gran->assign_position(four_locations[i]);
+    gran->set_total_volume(gran->custom_data["initial_volume"]);
+  }
+  #pragma omp critical
+  {
+    cells_on_bez(t_points,&five,&five_locations,5);
+    // cells_on_path(test_points,&test_locations,a);
+  }
+  for(int i=0;i<five_locations.size();i++)
+  {
+    Cell* gran;
+    gran= create_cell(granulosa_cell);
+    gran->assign_position(five_locations[i]);
+    gran->set_total_volume(gran->custom_data["initial_volume"]);
+  }
+  #pragma omp critical
+  {
+    cells_on_bez(t_points,&six,&six_locations,5);
+    // cells_on_path(test_points,&test_locations,a);
+  }
+  for(int i=0;i<six_locations.size();i++)
+  {
+    Cell* gran;
+    gran= create_cell(granulosa_cell);
+    gran->assign_position(six_locations[i]);
+    gran->set_total_volume(gran->custom_data["initial_volume"]);
+  }
+  for(int i=0; i<(*all_cells).size();i++)
+  {
+    Cell* temp_cell=(*all_cells)[i];
+    sinusoids.push_back(temp_cell);
+  }
+  std::vector<std::vector<double>> hepato=create_hepato_positions(14.5, 400, hole_centers, hole_radii,sinusoids);
+  for( int j=0; j < hepato.size(); j++ )
+		{
+			Cell* pCell_hepato;//placed this inside of the loop since it makes more sense to me
+			pCell_hepato = create_cell(hepato_cell); //
+			pCell_hepato->assign_position( hepato[j] );
+			pCell_hepato->set_total_volume(pCell_hepato->custom_data["initial_volume"]);
+		}
+
+  return;
 }

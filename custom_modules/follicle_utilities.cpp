@@ -1,9 +1,9 @@
 #include "./follicle_utilities.h"
-#include "follicle_utilities.h"
 #include "springs.h"
 #include <cmath>
 #include <cstddef>
 #include <fstream>
+#include <ratio>
 #include <unordered_map>
 #include <memory>
 #include <vector>
@@ -312,6 +312,29 @@ void activate_nodes(double radius_of_activation)
 	}
   return;
 }
+void set_dirchlet_nodes_cylinder(double radius, double height,std::vector<double> center, std::vector<double> dirchlet_condition)//cylinder specifies voxels by voxel center
+{
+  //dirchlet_condition vector is for example {a,b,c} values for 0-2 substrates
+  if(dirchlet_condition.size()!=default_microenvironment_options.Dirichlet_condition_vector.size())
+  {
+    std::cout<< dirchlet_condition.size()<<"\n";
+    std::cout<< default_microenvironment_options.Dirichlet_condition_vector.size()<<"\n";
+    std::cout<< microenvironment.number_of_densities()<<"\n";
+    std::cout<< "WARNING!!! TRIED TO SET SUBSTRATE VALUES THAT DO NOT EXIST! Check microenvironment settings."<<"\n";
+  }
+  //future versions could have rotated cylinder
+  else{
+    for( int i=0; i < microenvironment.number_of_voxels() ; i++ )// loop through all voxels
+    {
+      if(dist(microenvironment.voxels(i).center, center)>=radius && std::abs(microenvironment.voxels(i).center[2])<height)
+      {
+        microenvironment.add_dirichlet_node(i, dirchlet_condition);
+        microenvironment.density_vector(i)=dirchlet_condition;
+      }	
+    }
+  }
+  return;
+}
 double concentration_at_boundary(Cell* pCell, int solute_index)
 {
   //previously used microenvironment.nearest_density_vector(boundary_point)[solute]
@@ -419,21 +442,14 @@ void update_all_forces(Cell* pCell, double dt, double spring_constant) {
   custom_add_potentials_for_pCells(pCell,dt);
   non_connected_neighbor_pressure(pCell,dt,spring_constant);
   // function is designed so you could have a changing basement membrane but we set it static 
-  basement_membrane_mechanics(SPcell,basement_radius,basement_center,dt);  
+  // basement_membrane_mechanics(SPcell,basement_radius,basement_center,dt);  
   return;
 }
 void non_connected_neighbor_pressure(Cell* pCell, double dt, double spring_constant) {
-  // similar to the new function in PhysiCell 1.10 automatically pushes on cells
-  // that press up against the cell; however this version doesnt require the
-  // cell to be the same size as mechanics voxel uses same spring value as
-  // connections, avoids double pushing on connected cells
-  // probably much slower than it could be, optomize in future
   std::vector<Cell *> possible_neighbors ={}; 
-  cells_in_me(pCell,&possible_neighbors); // vector containing cells that could be interacting
-                                                               // with pCell that aren't in neighboors
   std::vector<Cell *> non_connected_neighbors={};
   //if neighbor is connected to me, remove it from list
-  #pragma omp private(possible_neighbors)
+  #pragma omp private(possible_neighbors) for
   for (int j = 0; j < possible_neighbors.size(); j++) {
     for (int i = 0; i < spring_cell_by_pCell_index[pCell->index]->m_springs.size(); i++) {
       if (possible_neighbors[j] == spring_cell_by_pCell_index[pCell->index]->m_springs[i]->m_pNeighbor) {
@@ -446,60 +462,65 @@ void non_connected_neighbor_pressure(Cell* pCell, double dt, double spring_const
     non_connected_neighbors.assign(possible_neighbors.begin(),possible_neighbors.end());
   }
   // std::cout<<"non connected neighbors list"<<
-  // non_connected_neighbors.size()<< std::endl;
-  double sum_x_velocity = pCell->velocity[0];
-  double sum_y_velocity = pCell->velocity[1];
-  double sum_z_velocity = pCell->velocity[2];
-  Cell *neighbor={};
-#pragma omp private(neighbor) for reduction(+:sum_x_velocity,sum_y_velocity,sum_z_velocity)
-  for (int i = 0; i < non_connected_neighbors.size(); i++) {
-    neighbor = non_connected_neighbors[i];
-    // std::cout<<neighbor<<std::endl;
-    std::vector<double> force_on_neighbor_direction = neighbor->position - pCell->position;
-    // if statement assumes strict interpentration of neighboors membrane into
-    // pCells membrane to exert spring pressure
-    if ((norm(force_on_neighbor_direction) - neighbor->phenotype.geometry.radius) < pCell->phenotype.geometry.radius) {
-      double spring_stretch = distance_between_membranes(pCell, neighbor);
-      std::vector<double> force_on_neighbor(3,0.0);
-      double rest_length=0;
-      Hookes_law_force(force_on_neighbor_direction, rest_length, spring_stretch, spring_constant, &force_on_neighbor);
-      double neighbor_mass = neighbor->phenotype.volume.total; // mass_of_cell(neighboor);
-      //TODO: make mass of cell function
-      double pCell_mass = pCell->phenotype.volume.total;
-      //#pragma omp private(neighbor) for
-      for (int coord=0; coord<3; coord++)
-      {
-              // forward euler velocity for now v=v+dt*dv/vt assume constant -
-              // -acceleration and mass over dt
-        neighbor->velocity[coord] += (abs(force_on_neighbor[coord] / neighbor_mass * dt) < 1e-16) ? 0.0 : (force_on_neighbor[coord] / neighbor_mass *dt);
-      }
-
-
-      // neighbor->velocity[0] +=
-      //     (abs(force_on_neighbor[0] / neighbor_mass * dt) < 1e-16)
-      //         ? 0.0
-      //         : (force_on_neighbor[0] / neighbor_mass * dt);
-      // neighbor->velocity[1] +=
-      //     (abs(force_on_neighbor[1] / neighbor_mass * dt) < 1e-16)
-      //         ? 0.0
-      //         : (force_on_neighbor[1] / neighbor_mass * dt);
-      // neighbor->velocity[2] +=
-      //     (abs(force_on_neighbor[2] / neighbor_mass * dt) < 1e-16)
-      //         ? 0.0
-      //         : (force_on_neighbor[2] / neighbor_mass * dt);
-      sum_x_velocity += (std::abs(force_on_neighbor[0] / pCell_mass * dt) < 1e-16) ? 0.0 : (force_on_neighbor[0] / pCell_mass * dt);
-      sum_y_velocity += (std::abs(force_on_neighbor[1] / pCell_mass * dt) < 1e-16) ? 0.0 : (force_on_neighbor[1] / pCell_mass * dt);
-      sum_z_velocity += (std::abs(force_on_neighbor[2] / pCell_mass * dt) < 1e-16) ? 0.0 : (force_on_neighbor[2] / pCell_mass * dt);
-    }
-    // TODO: possibly, eventually use Adams_Bashforth_ODE_2nd_Order for velocity
-    // velocity_x= previous_x+ 
-  }
-#pragma omp critical
+  // std::cout<<non_connected_neighbors.size()<< std::endl;
+  if(non_connected_neighbors.size()!=0)
   {
-    pCell->velocity[0] = (sum_x_velocity < 1e-16) ? 0.0 : sum_x_velocity;
-    pCell->velocity[1] = (sum_y_velocity < 1e-16) ? 0.0 : sum_y_velocity;
-    pCell->velocity[2] = (sum_z_velocity < 1e-16) ? 0.0 : sum_z_velocity;
+  
+    double sum_x_velocity = pCell->velocity[0];
+    double sum_y_velocity = pCell->velocity[1];
+    double sum_z_velocity = pCell->velocity[2];
+    Cell *neighbor={};
+#pragma omp private(neighbor) for reduction(+:sum_x_velocity,sum_y_velocity,sum_z_velocity)
+    for (int i = 0; i < non_connected_neighbors.size(); i++) {
+      neighbor = non_connected_neighbors[i];
+      // std::cout<<neighbor<<std::endl;
+      std::vector<double> force_on_neighbor_direction = neighbor->position - pCell->position;
+      // if statement assumes strict interpentration of neighboors membrane into
+      // pCells membrane to exert spring pressure
+      if ((norm(force_on_neighbor_direction) - neighbor->phenotype.geometry.radius) < pCell->phenotype.geometry.radius) {
+        double spring_stretch = distance_between_membranes(pCell, neighbor);
+        std::vector<double> force_on_neighbor(3,0.0);
+        double rest_length=0;
+        Hookes_law_force(force_on_neighbor_direction, rest_length, spring_stretch, spring_constant, &force_on_neighbor);
+        double neighbor_mass = neighbor->phenotype.volume.total; // mass_of_cell(neighboor);
+        //TODO: make mass of cell function
+        double pCell_mass = pCell->phenotype.volume.total;
+        //#pragma omp private(neighbor) for
+        for (int coord=0; coord<3; coord++)
+        {
+                // forward euler velocity for now v=v+dt*dv/vt assume constant -
+                // -acceleration and mass over dt
+          neighbor->velocity[coord] += (abs(force_on_neighbor[coord] / neighbor_mass * dt) < 1e-16) ? 0.0 : (force_on_neighbor[coord] / neighbor_mass *dt);
+        }
+
+
+        // neighbor->velocity[0] +=
+        //     (abs(force_on_neighbor[0] / neighbor_mass * dt) < 1e-16)
+        //         ? 0.0
+        //         : (force_on_neighbor[0] / neighbor_mass * dt);
+        // neighbor->velocity[1] +=
+        //     (abs(force_on_neighbor[1] / neighbor_mass * dt) < 1e-16)
+        //         ? 0.0
+        //         : (force_on_neighbor[1] / neighbor_mass * dt);
+        // neighbor->velocity[2] +=
+        //     (abs(force_on_neighbor[2] / neighbor_mass * dt) < 1e-16)
+        //         ? 0.0
+        //         : (force_on_neighbor[2] / neighbor_mass * dt);
+        sum_x_velocity += (std::abs(force_on_neighbor[0] / pCell_mass * dt) < 1e-16) ? 0.0 : (force_on_neighbor[0] / pCell_mass * dt);
+        sum_y_velocity += (std::abs(force_on_neighbor[1] / pCell_mass * dt) < 1e-16) ? 0.0 : (force_on_neighbor[1] / pCell_mass * dt);
+        sum_z_velocity += (std::abs(force_on_neighbor[2] / pCell_mass * dt) < 1e-16) ? 0.0 : (force_on_neighbor[2] / pCell_mass * dt);
+      }
+      // TODO: possibly, eventually use Adams_Bashforth_ODE_2nd_Order for velocity
+      // velocity_x= previous_x+ 
+    }
+#pragma omp critical
+    {
+      pCell->velocity[0] = (sum_x_velocity < 1e-16) ? 0.0 : sum_x_velocity;
+      pCell->velocity[1] = (sum_y_velocity < 1e-16) ? 0.0 : sum_y_velocity;
+      pCell->velocity[2] = (sum_z_velocity < 1e-16) ? 0.0 : sum_z_velocity;
+    }
   }
+  return;
 }
 // connection break- sever spring connection but maintain neighboor list to
 // check for membrane overlap two lists, connected_cells[] for cells connected
@@ -669,58 +690,13 @@ void update_interior_concentrations(Spring_Cell* SPcell)
 }
 void two_parameter_single_step(Cell* pCell, Phenotype &phenotype, double dt) // two_p
 {
-  Spring_Cell* SPcell=spring_cell_by_pCell_index[pCell->index]; //find the spring_cell containing pCell by its index
+  Spring_Cell* SPcell=spring_cell_by_pCell_index[pCell->index]; //find the spri
+  //ng_cell containing pCell by its index
   update_exterior_concentrations(SPcell);//update and get exterior concentrations
-  // std::cout<<"External "<<SPcell->exterior_osmolality<<"\n";
-  // std::cout<<"Internal "<<SPcell->interior_osmolality<<"\n";
-
-  // std::cout<<"pre moles: "<<SPcell->solute_moles<<"\n";
   SPcell->dVw_Osmolality();// calculate dVw/dt
   SPcell->dN_molarity();// calculate dN/dt
   SPcell->two_p_forward_step(dt);// forward step Adams-bashforth 2nd order uses dN and dVw to get new moles and water volume
   SPcell->two_p_update_volume();// update pCell volume and Spring Cell water and solute volume
-//   double osmotically_active_volume=SPcell->water_volume+SPcell->solute_volume;
-//   // std::cout<<"osmotically_active_volume: "<< osmotically_active_volume<<"\n"; 
-//   // std::cout<<"should be the same volume: "<< SPcell->m_my_pCell->phenotype.volume.total-SPcell->solid_volume<<"\n";
-//   // std::cout<<"total volume: "<< SPcell->m_my_pCell->phenotype.volume.total<<"\n";
-//   for(size_t i=0; i<SPcell->solute_moles.size(); i++)// loop through vector of solute_moles indexed by solute 
-//   {
-//
-//     // std::cout<<"moles: "<< SPcell->solute_moles[i]<<"\n";
-//     SPcell->interior_molarity[i]=SPcell->solute_moles[i]/osmotically_active_volume;// calculate molarity
-//     // std::cout<<"molarities: "<< SPcell->interior_molarity[i]<<"\n";
-//   }
-//   if(SPcell->simulation_selected==1)
-//     {// only EG selected
-//       SPcell->interior_component_molality[0]=molarity_to_molality(SPcell->interior_molarity[0], "NaCl");
-//       SPcell->interior_component_molality[1]=molarity_to_molality(SPcell->interior_molarity[1], "EG");
-//   //     
-//   //    // std::cout<<"interior_component_molality 0: "<< SPcell->interior_component_molality[0]<<"\n";   
-//   //    // std::cout<<"interior_component_molality 1: "<< SPcell->interior_component_molality[1]<<"\n";   
-//      // double vir=ternary_virial(SPcell->interior_component_molality[0],SPcell->interior_component_molality[1],"NaCl","EG"); 
-//      // std::cout<<"Interior OSMOLALITY: "<< vir<<"\n";   
-//       SPcell->interior_osmolality=ternary_virial(SPcell->interior_component_molality[0],SPcell->interior_component_molality[1],"NaCl","EG");
-// //SPcell->interior_component_molality[0]*1.68+SPcell->interior_component_molality[1];  
-//   }
-/* code for testing function 
-  int counting_test=0;
-      // std::cout<<"AREA: "<<SPcell->surface_area<<"\n";
-  if(osmotically_active_volume<551060&& SPcell->interior_osmolality>0.5|| SPcell->interior_osmolality<0.01)
-  {
-    if(counting_test%200==0)
-    { 
-      // std::cout<<"External: "<<SPcell->exterior_osmolality<<"\n";
-      // std::cout<<"Internal: "<<SPcell->interior_osmolality<<"\n";
-      // std::cout<<"Total Volume: "<<SPcell->m_my_pCell->phenotype.volume.total<<"\n";
-      // std::cout<<"water volume: "<<SPcell->water_volume<<"\n";
-      // std::cout<<"solid volume: "<<SPcell->solid_volume<<"\n";
-      // std::cout<<"solute volume: "<<SPcell->solute_volume<<"\n";
-      // std::cout<<"number of cores: "<<PhysiCell_settings.omp_num_threads<<"\n";
-      // std::cout<<"AREA: "<<SPcell->surface_area<<"\n";
-    } 
-    counting_test++;
-  }
-*/
   update_interior_concentrations(SPcell);
 
   uptake(SPcell); 
@@ -853,7 +829,7 @@ void get_basement_membrane_intersection(std::vector <double> &center_point, doub
       std::vector<std::vector <double>> test_corners(8,std::vector<double>(3,0.0));
       get_voxel_corners(test_voxel_center,test_corners);
       int sum=0;
-      #pragma omp private(sum,exterior_voxels)
+      #pragma omp parallel for private(sum,intersecting_voxels)
       for(size_t j =0; j<test_corners.size();j++)
       {
         //std::cout<<j<<" "<<test_corners[j]<<" distance: "<< norm(test_corners[j]-pCell->position)<<std::endl;
@@ -861,13 +837,13 @@ void get_basement_membrane_intersection(std::vector <double> &center_point, doub
         {
           sum+=1;
         }
-      }
+      
       //if(sum!=8 && sum !=0)
       if(sum!=0)
       {
         intersecting_voxels.push_back(bounding_voxels[i]);
       }
-
+      }
     }
     #pragma omp critical
     {
@@ -1067,16 +1043,16 @@ void connect_spring_cells(Spring_Cell* SpCell_1, Spring_Cell* SpCell_2)
   SpCell_2->add_spring(SpCell_1,spring_length);
   return;
 }
-void cells_in_neighborhood(Cell* pCell, double &maximum_interaction_distance, std::vector<Cell*> *neighboors)
+void cells_in_neighborhood(Cell* pCell, double maximum_interaction_distance, std::vector<Cell*> *neighboors)
 {
   std::vector <int> voxels_to_search_indicies={};
   max_interaction_variable_moore_neighborhood(pCell,maximum_interaction_distance,&voxels_to_search_indicies);
   std::vector <Cell*> cells_found_private{};
   std::vector <Cell*> cells_found{};
-  #pragma omp private(cells_found_private)
+  #pragma omp parallel for private(cells_found_private)
   for (size_t i = 0; i < voxels_to_search_indicies.size(); i++)
   {
-    for (size_t j = 0; j < pCell->get_container()->agent_grid[voxels_to_search_indicies[j]].size(); j++) 
+    for (size_t j = 0; j < pCell->get_container()->agent_grid[voxels_to_search_indicies[i]].size(); j++) 
     {
       if(pCell->get_container()->agent_grid[voxels_to_search_indicies[i]][j]!=pCell)
       {
@@ -1096,7 +1072,7 @@ void custom_add_potentials(Spring_Cell* SpCell, double dt)
 {
   std::vector <double> sum_of_forces_private(3,0.0);
   std::vector <double> sum_of_forces;
-  #pragma omp private(sum_of_forces_private)
+  #pragma omp parallel for private(sum_of_forces_private)
   for (size_t i = 0; i < SpCell->m_springs.size(); i++)//loop through my springs
   {
     double test_length=2.0;
@@ -1268,17 +1244,17 @@ void update_exterior_concentrations(Spring_Cell* SPcell)
   if(SPcell->simulation_selected==1)
   {
     // std::cout<<"Salt molarity: "<< concentration_at_boundary(SPcell->m_my_pCell,0)<<"\n";
-    SPcell->exterior_molarity[0]=concentration_at_boundary(SPcell->m_my_pCell,0);// read in the averaged exterior molarity in the voxels along the cell boundary
-    SPcell->exterior_component_molality[0]=molarity_to_molality(SPcell->exterior_molarity[0],"NaCl"); //convert the molarity into molality using the best fit polynomial
+    // SPcell->exterior_molarity[0]=concentration_at_boundary(SPcell->m_my_pCell,0);// read in the averaged exterior molarity in the voxels along the cell boundary
+    // SPcell->exterior_component_molality[0]=molarity_to_molality(SPcell->exterior_molarity[0],"NaCl"); //convert the molarity into molality using the best fit polynomial
     
     // std::cout<<"Eg molarity: "<< concentration_at_boundary(SPcell->m_my_pCell,1)<<"\n";
-    SPcell->exterior_molarity[1]=concentration_at_boundary(SPcell->m_my_pCell,1);
+    // SPcell->exterior_molarity[1]=concentration_at_boundary(SPcell->m_my_pCell,1);
     
     // std::cout<<"Test molal: "<< molarity_to_molality((SPcell->exterior_molarity[1]),"EG")<<"\n";
-    SPcell->exterior_component_molality[1]=molarity_to_molality(SPcell->exterior_molarity[1],"EG");
+    // SPcell->exterior_component_molality[1]=molarity_to_molality(SPcell->exterior_molarity[1],"EG");
     
    // std::cout<<"Test virial: "<< ternary_virial(SPcell->exterior_component_molality[0],SPcell->exterior_component_molality[1],"NaCl","EG")<<"\n";
-    SPcell->exterior_osmolality=ternary_virial(SPcell->exterior_component_molality[0],SPcell->exterior_component_molality[1],"NaCl","EG");
+    // SPcell->exterior_osmolality=ternary_virial(SPcell->exterior_component_molality[0],SPcell->exterior_component_molality[1],"NaCl","EG");
     // SPcell->exterior_component_molality[0]*1.68+SPcell->exterior_component_molality[1];//ternary_virial(SPcell->exterior_component_molality[0],SPcell->exterior_component_molality[1],"NaCl","EG");
   }
   else if(SPcell->simulation_selected==2)
@@ -1313,8 +1289,13 @@ void initialize_spring_cells()//make all cells spring cells
   //encapsulate all cells in the super class spring cell
   //find initial spring lengths and connect neighbors
   //set up basement membrane and connected exterior cells
-  std::vector <double> basement_membrane_center={0.0,0.0,0.0};
-  double basement_membrane_radius=100;
+  // std::vector <double> basement_membrane_center={0.0,0.0,0.0};
+  // double basement_membrane_radius=100;
+  // std::vector <double> hole1;
+  std::vector<std::vector<double>> hole_centers={{0,0,0},{250,300,0},{-250,300,0},
+    {300,0,0},{-300,0,0},{250,-300,0},{-250,-300,0}};
+  std::vector<double>hole_radii={50,25,25,25,25,25,25};
+  std::vector<std::vector<double>> hole_dirchlet={{0.155,1.5},{0,0},{0.0},{0,0},{0,0},{0.0},{0,0}};
   spring_cell_by_pCell_index.resize((*all_cells).size());
   for (size_t i = 0; i < (*all_cells).size(); i++)
   {
@@ -1323,9 +1304,13 @@ void initialize_spring_cells()//make all cells spring cells
   
 
   initialize_spring_connections();
-  initialize_basement_membrane(basement_membrane_center,basement_membrane_radius);
-  initialize_basement_membrane_connections( basement_membrane_center, basement_membrane_radius);
-    
+  // initialize_basement_membrane(basement_membrane_center,basement_membrane_radius);
+  // initialize_basement_membrane_connections( basement_membrane_center, basement_membrane_radius);
+    for (int j=0;j<hole_centers.size();j++)
+    {
+    initialize_basement_membrane(hole_centers[j],hole_radii[j]);
+    initialize_basement_membrane_connections( hole_centers[j],hole_radii[j]);
+    }
   return;
 }
 void initialize_basement_membrane_connections( std::vector <double> basement_membrane_center, double basement_membrane_radius)
