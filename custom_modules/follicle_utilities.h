@@ -59,6 +59,7 @@ double Forward_Euler (double f_value, double step_size, double df_dt);
 void uptake(Spring_Cell* SPcell);
 void solute_loading( double oxygen, double final_solute_concentration_1, double final_solute_concentration_2,double final_solute_concentration_3,double final_solute_concentration_4, double final_solute_concentration_5);
 void activate_nodes(double radius_of_activation);
+void activate_edges(double domain_size);
 
 void set_dirchlet_nodes_cylinder(double radius, double height,std::vector<double> center, std::vector<double> dirchlet_condition);//cylinder specifies voxels by voxel center
 void rasterize_my_uptake(Cell* pCell, double solute_index);

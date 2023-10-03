@@ -202,10 +202,10 @@ int main( int argc, char* argv[] )
 			// save data if it's time. 
 			if( fabs( PhysiCell_globals.current_time - PhysiCell_globals.next_full_save_time ) < 0.01 * diffusion_dt )
 			{
-        // std::vector <double> center={0.0,0.0,0.0};
+        std::vector <double> center={0.0,0.0,0.0};
 				display_simulation_status( std::cout );
         // output_all_voxels_concentrations();
-        // std::cout<<" Concentration is: "<< microenvironment.nearest_density_vector(microenvironment.nearest_voxel_index(center))<<"\n";
+        std::cout<<" Concentration is: "<< microenvironment.nearest_density_vector(microenvironment.nearest_voxel_index(center))<<"\n";
 				if( PhysiCell_settings.enable_legacy_saves == true )
 				{	
 					log_output( PhysiCell_globals.current_time , PhysiCell_globals.full_output_index, microenvironment, report_file);

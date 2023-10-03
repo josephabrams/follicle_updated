@@ -312,21 +312,39 @@ void activate_nodes(double radius_of_activation)
 	}
   return;
 }
+void activate_edges(double domain_size)
+{
+  double left= -1*domain_size;
+  double right= domain_size;
+  double top= domain_size;
+  double bottom=-1*domain_size;
+  double front= domain_size;
+  double back= -1*domain_size;
+	for( int i=0; i < microenvironment.number_of_voxels() ; i++ )//
+	{
+		if(microenvironment.voxels(i).center[0]<left || microenvironment.voxels(i).center[0]>right || microenvironment.voxels(i).center[1]>top || microenvironment.voxels(i).center[1]<bottom || microenvironment.voxels(i).center[2]<back ||microenvironment.voxels(i).center[2]>front)
+		{
+		  microenvironment.add_dirichlet_node(i, default_microenvironment_options.Dirichlet_condition_vector);//<<-- is this right?
+      microenvironment.density_vector(i)=default_microenvironment_options.Dirichlet_condition_vector;
+		}
+	}
+  return;
+}
 void set_dirchlet_nodes_cylinder(double radius, double height,std::vector<double> center, std::vector<double> dirchlet_condition)//cylinder specifies voxels by voxel center
 {
-  //dirchlet_condition vector is for example {a,b,c} values for 0-2 substrates
-  if(dirchlet_condition.size()!=default_microenvironment_options.Dirichlet_condition_vector.size())
-  {
     std::cout<< dirchlet_condition.size()<<"\n";
     std::cout<< default_microenvironment_options.Dirichlet_condition_vector.size()<<"\n";
-    std::cout<< microenvironment.number_of_densities()<<"\n";
+    std::cout<< microenvironment.number_of_densities()<<"\n";  //dirchlet_condition vector is for example {a,b,c} values for 0-2 substrates
+  if(dirchlet_condition.size()!=default_microenvironment_options.Dirichlet_condition_vector.size())
+  {
+
     std::cout<< "WARNING!!! TRIED TO SET SUBSTRATE VALUES THAT DO NOT EXIST! Check microenvironment settings."<<"\n";
   }
   //future versions could have rotated cylinder
   else{
     for( int i=0; i < microenvironment.number_of_voxels() ; i++ )// loop through all voxels
     {
-      if(dist(microenvironment.voxels(i).center, center)>=radius && std::abs(microenvironment.voxels(i).center[2])<height)
+      if(dist(microenvironment.voxels(i).center, center)<=radius && std::abs(microenvironment.voxels(i).center[2])<height)
       {
         microenvironment.add_dirichlet_node(i, dirchlet_condition);
         microenvironment.density_vector(i)=dirchlet_condition;
@@ -443,13 +461,20 @@ void update_all_forces(Cell* pCell, double dt, double spring_constant) {
   non_connected_neighbor_pressure(pCell,dt,spring_constant);
   // function is designed so you could have a changing basement membrane but we set it static 
   // basement_membrane_mechanics(SPcell,basement_radius,basement_center,dt);  
+  std::vector<std::vector<double>> hole_centers={{0,0,0},{250,300,0},{-250,300,0},
+    {300,0,0},{-300,0,0},{250,-300,0},{-250,-300,0}};
+  std::vector<double>hole_radii={50,25,25,25,25,25,25};
+  for(int i=0; i<hole_centers.size();i++)
+  {
+    basement_membrane_mechanics(SPcell, hole_radii[i], hole_centers[i],dt);
+  }
   return;
 }
 void non_connected_neighbor_pressure(Cell* pCell, double dt, double spring_constant) {
   std::vector<Cell *> possible_neighbors ={}; 
   std::vector<Cell *> non_connected_neighbors={};
   //if neighbor is connected to me, remove it from list
-  #pragma omp private(possible_neighbors) for
+  #pragma omp parallel for private(possible_neighbors)
   for (int j = 0; j < possible_neighbors.size(); j++) {
     for (int i = 0; i < spring_cell_by_pCell_index[pCell->index]->m_springs.size(); i++) {
       if (possible_neighbors[j] == spring_cell_by_pCell_index[pCell->index]->m_springs[i]->m_pNeighbor) {
@@ -1244,17 +1269,17 @@ void update_exterior_concentrations(Spring_Cell* SPcell)
   if(SPcell->simulation_selected==1)
   {
     // std::cout<<"Salt molarity: "<< concentration_at_boundary(SPcell->m_my_pCell,0)<<"\n";
-    // SPcell->exterior_molarity[0]=concentration_at_boundary(SPcell->m_my_pCell,0);// read in the averaged exterior molarity in the voxels along the cell boundary
-    // SPcell->exterior_component_molality[0]=molarity_to_molality(SPcell->exterior_molarity[0],"NaCl"); //convert the molarity into molality using the best fit polynomial
+    SPcell->exterior_molarity[0]=concentration_at_boundary(SPcell->m_my_pCell,0);// read in the averaged exterior molarity in the voxels along the cell boundary
+    SPcell->exterior_component_molality[0]=molarity_to_molality(SPcell->exterior_molarity[0],"NaCl"); //convert the molarity into molality using the best fit polynomial
     
     // std::cout<<"Eg molarity: "<< concentration_at_boundary(SPcell->m_my_pCell,1)<<"\n";
-    // SPcell->exterior_molarity[1]=concentration_at_boundary(SPcell->m_my_pCell,1);
+    SPcell->exterior_molarity[1]=concentration_at_boundary(SPcell->m_my_pCell,1);
     
     // std::cout<<"Test molal: "<< molarity_to_molality((SPcell->exterior_molarity[1]),"EG")<<"\n";
-    // SPcell->exterior_component_molality[1]=molarity_to_molality(SPcell->exterior_molarity[1],"EG");
+    SPcell->exterior_component_molality[1]=molarity_to_molality(SPcell->exterior_molarity[1],"EG");
     
    // std::cout<<"Test virial: "<< ternary_virial(SPcell->exterior_component_molality[0],SPcell->exterior_component_molality[1],"NaCl","EG")<<"\n";
-    // SPcell->exterior_osmolality=ternary_virial(SPcell->exterior_component_molality[0],SPcell->exterior_component_molality[1],"NaCl","EG");
+    SPcell->exterior_osmolality=ternary_virial(SPcell->exterior_component_molality[0],SPcell->exterior_component_molality[1],"NaCl","EG");
     // SPcell->exterior_component_molality[0]*1.68+SPcell->exterior_component_molality[1];//ternary_virial(SPcell->exterior_component_molality[0],SPcell->exterior_component_molality[1],"NaCl","EG");
   }
   else if(SPcell->simulation_selected==2)

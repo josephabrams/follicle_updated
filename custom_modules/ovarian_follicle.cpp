@@ -14,9 +14,9 @@ Cell_Definition hepato_cell;
 
 std::string output_filename;
 
-double k_granulosa=0.1;
-double k_oocyte=0.1;
-double k_basement=0.1;
+double k_granulosa=0.3;
+double k_oocyte=0.3;
+double k_basement=0.3;
 std::vector<std::string> my_coloring_function( Cell* pCell )
 { return paint_by_number_cell_coloring(pCell); }
 std::vector<std::string> follicle_coloring_function( Cell* pCell )//function for coloring cells in SVG output
@@ -127,7 +127,6 @@ void create_cell_types( void )
 	// use default proliferation and death
 	int cycle_start_index = live.find_phase_index( PhysiCell_constants::live );
 	int cycle_end_index = live.find_phase_index( PhysiCell_constants::live );
-	int apoptosis_index = cell_defaults.phenotype.death.find_death_model_index( PhysiCell_constants::apoptosis_death_model );
 	// set default uptake and secretion
 	// oxygen
 	cell_defaults.phenotype.secretion.secretion_rates[0] = 0;
@@ -188,8 +187,7 @@ void create_hepato_cell_type(void)
 	int cycle_start_index = live.find_phase_index( PhysiCell_constants::live );
 	int cycle_end_index = live.find_phase_index( PhysiCell_constants::live );
 	hepato_cell.phenotype.cycle.data.transition_rate(cycle_start_index,cycle_end_index) = 0.0;
-  int apoptosis_index = cell_defaults.phenotype.death.find_death_model_index( PhysiCell_constants::apoptosis_death_model );
-	//
+  hepato_cell.phenotype.death.rates={0,0,0};
 	hepato_cell.phenotype.secretion.uptake_rates[0] *=0;
 	hepato_cell.phenotype.secretion.secretion_rates[0] *=0;
 	hepato_cell.phenotype.secretion.uptake_rates[1] *=0;
@@ -231,17 +229,18 @@ void hepato_cell_rule( Cell* pCell, Phenotype& phenotype, double dt )
 void hepato_phenotype_rule( Cell* pCell, Phenotype& phenotype, double dt )
 {
   Spring_Cell* SPcell=spring_cell_by_pCell_index[pCell->index];
-  // two_parameter_single_step(pCell,phenotype, dt);
+  two_parameter_single_step(pCell,phenotype, dt);
+  update_all_forces(pCell,dt,pCell->custom_data["spring_constant"]);
   // if(PhysiCell_globals.current_time<dt){
     // SPcell->initial_number_of_connections=SPcell->m_springs.size();
   // }
   // output_tzp_score(pCell, phenotype, dt);
-  // int thread_id=omp_get_thread_num();
-  spring_cell_functions(pCell,phenotype,dt);	
- //  std::ofstream ofs;
-	// ofs.open ("./output/oocyte_output.csv", std::ofstream::out | std::ofstream::app);
- //  ofs <<parameters.ints("selected_simulation")<<", "<< default_microenvironment_options.Dirichlet_condition_vector<<", "<<PhysiCell_globals.current_time<<", "<<pCell->type_name<<", "<< pCell->phenotype.volume.total<<", "<<pCell->position[0]<<", "<<pCell->position[1]<<", "<<pCell->position[2]<<", "<<SPcell->m_springs.size() <<", "<<k_oocyte<<", "<<k_granulosa<<", "<<k_basement<<"\n";
-	// ofs.close();
+  int thread_id=omp_get_thread_num();
+  // spring_cell_functions(pCell,phenotype,dt);	
+  std::ofstream ofs;
+	ofs.open ("./output/hepato.csv", std::ofstream::out | std::ofstream::app);
+  ofs <<parameters.ints("selected_simulation")<<", "<< default_microenvironment_options.Dirichlet_condition_vector<<", "<<PhysiCell_globals.current_time<<", "<<pCell->type_name<<", "<< pCell->phenotype.volume.total<<", "<<pCell->position[0]<<", "<<pCell->position[1]<<", "<<pCell->position[2]<<", "<<SPcell->m_springs.size() <<", "<<k_oocyte<<", "<<k_granulosa<<", "<<k_basement<<"\n";
+	ofs.close();
   // std::cout<<"VOLUME:"<<pCell->phenotype.volume.total<<"\n"; 
   
 	return;
@@ -302,7 +301,7 @@ void oocyte_cell_rule( Cell* pCell, Phenotype& phenotype, double dt )
 }
 void oocyte_phenotype_rule( Cell* pCell, Phenotype& phenotype, double dt )
 {
-  Spring_Cell* SPcell=spring_cell_by_pCell_index[pCell->index];
+  // Spring_Cell* SPcell=spring_cell_by_pCell_index[pCell->index];
   // two_parameter_single_step(pCell,phenotype, dt);
   // if(PhysiCell_globals.current_time<dt){
     // SPcell->initial_number_of_connections=SPcell->m_springs.size();
@@ -419,15 +418,16 @@ int count=0;
 void granulosa_phenotype_rule( Cell* pCell, Phenotype& phenotype, double dt )
 {
   Spring_Cell* SPcell=spring_cell_by_pCell_index[pCell->index];
-  // int thread_id=omp_get_thread_num();
-  //two_parameter_single_step(pCell,phenotype, dt);
+  int thread_id=omp_get_thread_num();
+  two_parameter_single_step(pCell,phenotype, dt);
+  update_all_forces(pCell,dt,pCell->custom_data["spring_constant"]);
  //  // std::cout<<" FORCE PARAM: "<< k_oocyte<<", "<<k_granulosa<<", "<<k_basement<<"\n";
-  spring_cell_functions(pCell,phenotype,dt);
+  // spring_cell_functions(pCell,phenotype,dt);
   // if(count%100==0){
-  //   std::ofstream ofs;
-  //   ofs.open ("./output/2p_Test_granulosa.csv", std::ofstream::out | std::ofstream::app);
-  //   ofs << PhysiCell_globals.current_time<<", "<<pCell->index<<", "<<SPcell->m_my_pCell->index<<", "<< pCell<<", "<< pCell->phenotype.volume.total<<", "<<SPcell->exterior_osmolality<<", "<<SPcell->interior_osmolality <<", "<<SPcell->exterior_molarity[1]<<", "<<SPcell->interior_molarity[1]<<", "<<PhysiCell_settings.omp_num_threads<<", "<< thread_id<<"\n";
-  //   ofs.close();
+    std::ofstream ofs;
+    ofs.open ("./output/2p_Test_granulosa.csv", std::ofstream::out | std::ofstream::app);
+    ofs << PhysiCell_globals.current_time<<", "<<pCell->index<<", "<<SPcell->m_my_pCell->index<<", "<< pCell<<", "<< pCell->phenotype.volume.total<<", "<<SPcell->exterior_osmolality<<", "<<SPcell->interior_osmolality <<", "<<SPcell->exterior_molarity[1]<<", "<<SPcell->interior_molarity[1]<<", "<<PhysiCell_settings.omp_num_threads<<", "<< thread_id<<"\n";
+    ofs.close();
   //   count++;
   // }
   // else{
@@ -662,7 +662,8 @@ void setup_microenvironment( void )
   std::vector<std::vector<double>> hole_centers={{0,0,0},{250,300,0},{-250,300,0},
     {300,0,0},{-300,0,0},{250,-300,0},{-250,-300,0}};
   std::vector<double>hole_radii={50,25,25,25,25,25,25};
-  std::vector<std::vector<double>> hole_dirchlet={default_microenvironment_options.Dirichlet_condition_vector,{0.155,0},{0.155,0},{0.155,0},{0.155,0},{0.155,0},{0.155,0}};
+  // std::vector<std::vector<double>> hole_dirchlet={default_microenvironment_options.Dirichlet_condition_vector,{0.155,0},{0.155,0},{0.155,0},{0.155,0},{0.155,0},{0.155,0}};
+  std::vector<std::vector<double>> hole_dirchlet={{0.155,0},{0.155,0},{0.155,0},{0.155,0},{0.155,0},{0.155,0},{0.155,0}};
   // activate_nodes(dirichlet_nodes_radius);//place the Dirichlet nodes at a radius around the follicle 
  for (int j=0;j<hole_dirchlet.size();j++)
   {
@@ -670,7 +671,8 @@ void setup_microenvironment( void )
     set_dirchlet_nodes_cylinder(hole_radii[j],50,hole_centers[j],hole_dirchlet[j]); 
 
   }
-	//total_uptake.resize(microenvironment.mesh.voxels.size());
+  activate_edges(400);	
+  //total_uptake.resize(microenvironment.mesh.voxels.size());
 	//all_total_uptakes.resize(number_of_permeating_solutes,total_uptake);
 	return;
 }
@@ -980,7 +982,7 @@ std::vector<std::vector<double>> create_hepato_positions(double cell_radius,
     for(int m=0; m<sinusoids.size(); m++)
     {
 
-      while(norm(cells[k]-sinusoids[m]->position)<
+      while(norm(cells[k]-sinusoids[m]->position)<=
         (sinusoids[m]->phenotype.geometry.radius+cell_radius-2))
       {
 

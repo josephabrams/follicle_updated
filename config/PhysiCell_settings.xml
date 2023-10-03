@@ -13,7 +13,7 @@
 	</domain>
 	
 	<overall>
-		<max_time units="sec">1</max_time> 
+		<max_time units="sec">100</max_time> 
 		<time_units>min</time_units>
 		<space_units>micron</space_units>
 	
@@ -35,7 +35,7 @@
 		</full_data>
 		
 		<SVG>
-			<interval units="sec">.5</interval>
+			<interval units="sec">1</interval>
 			<enable>true</enable>
 		</SVG>
 		
