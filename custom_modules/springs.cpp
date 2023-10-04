@@ -252,13 +252,13 @@ void Spring_Cell::set_2p_initial_conditions()
     // std::cout<<"Initial HM/PBS moles"<<this->solute_moles[0]<<"\n";
     if(this->m_my_pCell->type==1)
     { 
-      this->Ps[0]=parameters.doubles("oocyte_Ps_NaCl");
-      this->Lp=parameters.doubles("oocyte_Lp_NaCl");
+      this->Ps[0]=parameters.doubles("oocyte_Ps_PBS");
+      this->Lp=parameters.doubles("oocyte_Lp_PBS");
     }
     else
     {
-      this->Ps[0]=parameters.doubles("gran_Ps_NaCl");
-      this->Lp=parameters.doubles("gran_Lp_NaCl");
+      this->Ps[0]=parameters.doubles("gran_Ps_PBS");
+      this->Lp=parameters.doubles("gran_Lp_PBS");
     }
     this->interior_component_molality[0]=molarity_to_molality(this->interior_molarity[0], "NaCl");
     double vir=binary_virial(this->interior_component_molality[0],"NaCl"); 

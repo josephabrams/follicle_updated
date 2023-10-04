@@ -224,7 +224,7 @@ void get_interior_voxels(Cell* pCell, std::vector<int>* return_interior_voxel_in
     diffusion_bounding_box(pCell,&bounding_voxels);
     
     std::vector<int> interior_voxels={};
-
+    #pragma omp parallel for private(interior_voxels)
     for (size_t i = 0; i < bounding_voxels.size(); i++)
     {
       std::vector<double> test_voxel_center=pCell->get_container()->underlying_mesh.voxels[bounding_voxels[i]].center;
@@ -233,7 +233,7 @@ void get_interior_voxels(Cell* pCell, std::vector<int>* return_interior_voxel_in
       get_voxel_corners(test_voxel_center,test_corners);
      
       int sum=0;
-      #pragma omp private(interior_voxels)
+      // #pragma omp private(interior_voxels)
 
       if(norm(test_voxel_center-pCell->position)<=pCell->phenotype.geometry.radius)
       {
@@ -429,21 +429,22 @@ void non_connected_neighbor_pressure(Cell* pCell, double dt, double spring_const
   // connections, avoids double pushing on connected cells
   // probably much slower than it could be, optomize in future
   std::vector<Cell *> possible_neighbors ={}; 
+  std::vector<Cell *> found_neighbors ={}; 
   cells_in_me(pCell,&possible_neighbors); // vector containing cells that could be interacting
                                                                // with pCell that aren't in neighboors
   std::vector<Cell *> non_connected_neighbors={};
-  //if neighbor is connected to me, remove it from list
-  #pragma omp private(possible_neighbors)
+  //if neighbor is connected to me, add to found list
+  #pragma omp parallel for private(possible_neighbors,found_neighbors)
   for (int j = 0; j < possible_neighbors.size(); j++) {
     for (int i = 0; i < spring_cell_by_pCell_index[pCell->index]->m_springs.size(); i++) {
       if (possible_neighbors[j] == spring_cell_by_pCell_index[pCell->index]->m_springs[i]->m_pNeighbor) {
-        possible_neighbors.erase(possible_neighbors.begin() + j);
+        found_neighbors.push_back(possible_neighbors[j]);
       }
     }
   }
   #pragma omp critical
   {
-    non_connected_neighbors.assign(possible_neighbors.begin(),possible_neighbors.end());
+    non_connected_neighbors.assign(found_neighbors.begin(),found_neighbors.end());
   }
   // std::cout<<"non connected neighbors list"<<
   // non_connected_neighbors.size()<< std::endl;
@@ -451,7 +452,7 @@ void non_connected_neighbor_pressure(Cell* pCell, double dt, double spring_const
   double sum_y_velocity = pCell->velocity[1];
   double sum_z_velocity = pCell->velocity[2];
   Cell *neighbor={};
-#pragma omp private(neighbor) for reduction(+:sum_x_velocity,sum_y_velocity,sum_z_velocity)
+  #pragma omp parallel for private(found_neighbors) reduction(+:sum_x_velocity,sum_y_velocity,sum_z_velocity)
   for (int i = 0; i < non_connected_neighbors.size(); i++) {
     neighbor = non_connected_neighbors[i];
     // std::cout<<neighbor<<std::endl;

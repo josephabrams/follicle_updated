@@ -7,13 +7,36 @@
 #define PI 3.14159265
 #define R 0.08205//granulosa (10^-3 J/mole*k)
 using namespace Springs;
+/*
+    """Values measured in experiment: """
+    """
+        0.5x PBS: .187 mmol/kg
+        1x PBS: .323 osmol/kg
+        2x PBS: .643 osmol/kg
+        5x PBS: 1.600 osmol/kg
+        15% glycerol: 2.185 osmol/kg
+        15% EG: 2.503 osmol/kg
+        15% glycerol+ 15% EG: 4.788 osmol/kg
+        Holding media: .255 osmol/kg
+
+    """
+ *
+ */
+const double normalized_TZP_score05x =.463;
+const double normalized_TZP_score1x =1.0;
+const double normalized_TZP_score2x =.522;
+const double normalized_TZP_score5x =.039;
+
+const double normalized_TZP_scoreEG =.487;
+const double normalized_TZP_scoreGLY =.296;
+const double normalized_TZP_scoreEGandGLY =.757;
 Cell_Definition oocyte_cell;
 Cell_Definition granulosa_cell;
 std::string output_filename;
 
-double k_granulosa=0.1;
-double k_oocyte=0.1;
-double k_basement=0.1;
+double k_granulosa=9000;
+double k_oocyte=9000;
+double k_basement=900;
 std::vector<std::string> my_coloring_function( Cell* pCell )
 { return paint_by_number_cell_coloring(pCell); }
 std::vector<std::string> follicle_coloring_function( Cell* pCell )//function for coloring cells in SVG output
@@ -439,7 +462,7 @@ void setup_microenvironment( void )
   {
     //select which PBS simulation, default is 1x
     std::cout<<"running PBS loading"<<"\n";
-    microenvironment.add_density( "PBS", "dimensionless" );
+    microenvironment.set_density( 0,"PBS", "mol/L" );
     microenvironment.diffusion_coefficients[0] = 510;
     microenvironment.decay_rates[0] = 0;
     if (selected_PBS_simulation==0) {
