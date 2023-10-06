@@ -23,7 +23,7 @@
 	</overall>
 	
 	<parallel>
-		<omp_num_threads>14</omp_num_threads>
+		<omp_num_threads>9</omp_num_threads>
 	</parallel> 
 	
 	<save>
@@ -35,7 +35,7 @@
 		</full_data>
 		
 		<SVG>
-			<interval units="sec">.5</interval>
+			<interval units="sec">.1</interval>
 			<enable>true</enable>
 		</SVG>
 		
@@ -207,9 +207,9 @@
 <user_parameters>
   <random_seed type="int" units="dimensionless" description="">0</random_seed>
 <!-- selected simulation allows simulations to be switched between EG, GLY, PBS and EG with GLY, using 1,2,3 and 4 respectively and 5,6,7 for karlsson EG,DMSO,PROH -->
-  <selected_simulation type="int" units="dimensionless" description="">1</selected_simulation>
+  <selected_simulation type="int" units="dimensionless" description="">3</selected_simulation>
 <!-- selected_PBS_concentration allows PBS simulations to be switched between 0.5xPBS, 1xPBS, 2xPBS and 5xPBS using 0,1,2 and 5 respectively-->
-  <selected_PBS_simulation type="int" units="xPBS" description="">1</selected_PBS_simulation>
+  <selected_PBS_simulation type="int" units="xPBS" description="">2</selected_PBS_simulation>
       <temperature type="double" units="degrees" description="">293.15</temperature>
       <gas_constant type="double" units="10^-3 J/mole*k" description="">0.08205</gas_constant>
 <!-- volume and surface area are derived from radius of sphere-->
@@ -229,10 +229,10 @@
       <gran_Lp_PBS type="double" units="um/sec/atm" description="">0.0114035</gran_Lp_PBS>
       <oocyte_Ps_EG type="double" units="um/sec" description="Karlsson et al">0.12</oocyte_Ps_EG>
       <oocyte_Ps_GLY type="double" units="um/sec" description="">0.107</oocyte_Ps_GLY>
-      <oocyte_Ps_NaCl type="double" units="um/sec" description="">0.0</oocyte_Ps_NaCl>
+      <oocyte_Ps_PBS type="double" units="um/sec" description="">0.0</oocyte_Ps_PBS>
       <gran_Ps_EG type="double" units="um/sec" description="">0.0276</gran_Ps_EG>
       <gran_Ps_GLY type="double" units="" description="um/sec">0.00294</gran_Ps_GLY>
-      <gran_Ps_NaCl type="double" units="" description="um/sec">0.0</gran_Ps_NaCl>
+      <gran_Ps_PBS type="double" units="" description="um/sec">0.0</gran_Ps_PBS>
       <oocyte_Lp_EG_and_GLY type="double" units="um/sec/atm" description="">0.15</oocyte_Lp_EG_and_GLY>
       <gran_Lp_EG_and_GLY type="double" units="um/sec/atm" description="">0.0345</gran_Lp_EG_and_GLY>
       <follicle_radius type="double" units="micron" description="">130</follicle_radius>
