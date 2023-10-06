@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <memory>
 #include <vector>
+#include <algorithm> 
 // #include "./springs.h"
 // using namespace Springs;
 //  #include <stdef.h>
@@ -224,7 +225,7 @@ void get_interior_voxels(Cell* pCell, std::vector<int>* return_interior_voxel_in
     diffusion_bounding_box(pCell,&bounding_voxels);
     
     std::vector<int> interior_voxels={};
-    #pragma omp parallel for private(interior_voxels)
+
     for (size_t i = 0; i < bounding_voxels.size(); i++)
     {
       std::vector<double> test_voxel_center=pCell->get_container()->underlying_mesh.voxels[bounding_voxels[i]].center;
@@ -233,7 +234,7 @@ void get_interior_voxels(Cell* pCell, std::vector<int>* return_interior_voxel_in
       get_voxel_corners(test_voxel_center,test_corners);
      
       int sum=0;
-      // #pragma omp private(interior_voxels)
+      #pragma omp private(interior_voxels)
 
       if(norm(test_voxel_center-pCell->position)<=pCell->phenotype.geometry.radius)
       {
@@ -430,11 +431,11 @@ void non_connected_neighbor_pressure(Cell* pCell, double dt, double spring_const
   // probably much slower than it could be, optomize in future
   std::vector<Cell *> possible_neighbors ={}; 
   std::vector<Cell *> found_neighbors ={}; 
-  cells_in_me(pCell,&possible_neighbors); // vector containing cells that could be interacting
+  cells_in_me(pCell,&possible_neighbors); // vector containing cells that could be interacting does not contain pCell
                                                                // with pCell that aren't in neighboors
   std::vector<Cell *> non_connected_neighbors={};
-  //if neighbor is connected to me, add to found list
-  #pragma omp parallel for private(possible_neighbors,found_neighbors)
+  //if neighbor is connected to me, remove it from list
+  #pragma omp parrallel for private(possible_neighbors)
   for (int j = 0; j < possible_neighbors.size(); j++) {
     for (int i = 0; i < spring_cell_by_pCell_index[pCell->index]->m_springs.size(); i++) {
       if (possible_neighbors[j] == spring_cell_by_pCell_index[pCell->index]->m_springs[i]->m_pNeighbor) {
@@ -444,15 +445,37 @@ void non_connected_neighbor_pressure(Cell* pCell, double dt, double spring_const
   }
   #pragma omp critical
   {
-    non_connected_neighbors.assign(found_neighbors.begin(),found_neighbors.end());
+    possible_neighbors.push_back(pCell);//append pCell to end for iterator search
   }
+
+  std::vector<Cell*>::iterator it;
+  #pragma omp parrallel for private(possible_neighbors)
+  for (int i =0; i<found_neighbors.size(); i++)
+  {
+    it = std::find (possible_neighbors.begin(), possible_neighbors.end(), found_neighbors[i]);
+    if (it != possible_neighbors.end())
+    {
+      possible_neighbors.erase(it);
+    }
+  }
+  #pragma omp critical
+  {
+    possible_neighbors.pop_back();//remove pCell from end
+    non_connected_neighbors.assign(possible_neighbors.begin(),possible_neighbors.end());
+  }
+
+  //debug output:
+  if(pCell->type!=1&& non_connected_neighbors.size()!=0){
+    std::cout<<"non-connected neighbor size: "<<non_connected_neighbors.size()<<"\n";
+  }
+  //
   // std::cout<<"non connected neighbors list"<<
   // non_connected_neighbors.size()<< std::endl;
   double sum_x_velocity = pCell->velocity[0];
   double sum_y_velocity = pCell->velocity[1];
   double sum_z_velocity = pCell->velocity[2];
   Cell *neighbor={};
-  #pragma omp parallel for private(found_neighbors) reduction(+:sum_x_velocity,sum_y_velocity,sum_z_velocity)
+  #pragma omp parallel for private(neighbor) reduction(+:sum_x_velocity,sum_y_velocity,sum_z_velocity)
   for (int i = 0; i < non_connected_neighbors.size(); i++) {
     neighbor = non_connected_neighbors[i];
     // std::cout<<neighbor<<std::endl;
@@ -1060,9 +1083,9 @@ void general_voxel_bounding_box(std::vector<int> *return_bounding_box,std::vecto
 /* function just connects the spring cells doesn't check distances, this might be better places in springs.cpp     */
 void connect_spring_cells(Spring_Cell* SpCell_1, Spring_Cell* SpCell_2)
 {
-  // if(SpCell_1->m_my_pCell->type==1 || SpCell_2->m_my_pCell->type==1){
-    // std::cout<<"Connections made from "<< SpCell_1->m_my_pCell->type_name<<" to "<< SpCell_2->m_my_pCell->type_name<<"\n";
-  // }
+  if(SpCell_1->m_my_pCell->type==1 || SpCell_2->m_my_pCell->type==1){
+    std::cout<<"Connections made from "<< SpCell_1->m_my_pCell->type_name<<" to "<< SpCell_2->m_my_pCell->type_name<<"\n";
+  }
   double spring_length=distance_between_membranes(SpCell_1->m_my_pCell,SpCell_2->m_my_pCell);
   SpCell_1->add_spring(SpCell_2,spring_length);
   SpCell_2->add_spring(SpCell_1,spring_length);
@@ -1096,21 +1119,23 @@ void cells_in_neighborhood(Cell* pCell, double &maximum_interaction_distance, st
 void custom_add_potentials(Spring_Cell* SpCell, double dt)
 {
   std::vector <double> sum_of_forces_private(3,0.0);
-  std::vector <double> sum_of_forces;
-  #pragma omp private(sum_of_forces_private)
+  std::vector <double> sum_of_forces={};
+  std::vector <double> force(3,0.0);
+  std::vector <double> force_direction(3,0.0);
+  double spring_stretch=0;
+  #pragma omp parallel for private(sum_of_forces_private,force,spring_stretch,force_direction)
   for (size_t i = 0; i < SpCell->m_springs.size(); i++)//loop through my springs
   {
-    double test_length=2.0;
+    // double test_length=2.0;
     double spring_stretch=distance_between_membranes(SpCell->m_my_pCell,SpCell->m_springs[i]->m_pNeighbor);
     if(spring_stretch<0)
     {
-      #pragma omp critical
-      {
-        spring_stretch+=SpCell->m_my_pCell->custom_data["allowed_overlap"];
-      }
+      // #pragma omp critical
+      // {
+        // spring_stretch+=SpCell->m_my_pCell->custom_data["allowed_overlap"];
+      // }
     }
-    std::vector <double> force(3,0.0);
-    std::vector<double> force_direction= displacement_between_membranes(SpCell->m_my_pCell,SpCell->m_springs[i]->m_pNeighbor);//from me to neighbor
+    force_direction= displacement_between_membranes(SpCell->m_my_pCell,SpCell->m_springs[i]->m_pNeighbor);//from me to neighbor
     Hookes_law_force(force_direction,SpCell->m_springs[i]->m_length,spring_stretch,SpCell->m_my_pCell->custom_data["cell_k"], &force);
     sum_of_forces_private+= force;
     //std::cout<<"spring stretch "<<spring_stretch<<"\n";
@@ -1172,7 +1197,7 @@ void spring_cells_in_neighborhood(Spring_Cell* SpCell, double maximum_interactio
 }
 void initialize_spring_connections()//also initialize mechanics and 2p vectors which probably should be done elsewhere
 {
-  // std::cout<<"initializing connections!"<<"\n"; 
+  std::cout<<"initializing connections!"<<"\n"; 
   //using modified moore neighborhood search for "spring cell" neighbors and connect them with spring objects
   for(size_t i=0;i<all_spring_cells.size();i++) //loop through all spring cells
   {
@@ -1310,7 +1335,7 @@ void update_exterior_concentrations(Spring_Cell* SPcell)
 }
 void initialize_spring_cells()//make all cells spring cells
 {
-  // std::cout<<"Initializing Spring Cells"<<"\n";
+  std::cout<<"Initializing Spring Cells"<<"\n";
   //encapsulate all cells in the super class spring cell
   //find initial spring lengths and connect neighbors
   //set up basement membrane and connected exterior cells
@@ -1394,8 +1419,7 @@ void basement_membrane_mechanics(Spring_Cell* SpCell, double basement_membrane_r
       if(current_length+SpCell->m_my_pCell->phenotype.geometry.radius+default_microenvironment_options.dx<0)
       {
        //updated to use outer_radius from basement membrane function
-      //  std::cout<< "WARNING!! CELL PASSED THROUGH BASEMENT MEMBRANE!"<<std::endl;
-        SpCell->is_outside=true; 
+        std::cout<< "WARNING!! CELL PASSED THROUGH BASEMENT MEMBRANE!"<<std::endl;
       } 
       current_length=current_length-2.0;
       std::vector<double> force(3,0.0);
