@@ -81,11 +81,17 @@
 #include "./custom_modules/follicle_utilities.h" 
 #include "./custom_modules/ovarian_follicle.h" 
 #include "./custom_modules/springs.h"	
+#include "./custom_modules/Ellipsoid_Cells.h"
+#include "./custom_modules/cryo_parameters.h"
+#include "./custom_modules/custom_connections.h"
+#include "./custom_modules/ECM_Agents_3D.h"
+#include "./custom_modules/follicle_utilities.h"
+#include "./custom_modules/multivoxel_utilities.h"
 #include "BioFVM/BioFVM_microenvironment.h"
 using namespace BioFVM;
 using namespace PhysiCell;
 using namespace Springs;
-
+using namespace Ellipsoid_Cell;
 int main( int argc, char* argv[] )
 {
 	// load and parse settings file(s)

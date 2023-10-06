@@ -1,5 +1,5 @@
 VERSION := $(shell grep . VERSION.txt | cut -f1 -d:)
-PROGRAM_NAME := ovarian_follicle
+PROGRAM_NAME := ellipsoids
 
 CC := g++
 # CC := g++-mp-7 # typical macports compiler name
@@ -49,7 +49,8 @@ PhysiCell_pugixml.o PhysiCell_settings.o PhysiCell_geometry.o
 
 # put your custom objects here (they should be in the custom_modules directory)
 
-PhysiCell_custom_module_OBJECTS := follicle_utilities.o ovarian_follicle.o springs.o
+PhysiCell_custom_module_OBJECTS := follicle_utilities.o ovarian_follicle.o springs.o Ellipsoid_Cells.o multivoxel_utilities.o \
+cryo_parameters.o custom_connections.o membranes_and_vessels.o 
 
 pugixml_OBJECTS := pugixml.o
 
@@ -341,6 +342,22 @@ follicle_utilities.o: ./custom_modules/follicle_utilities.cpp
 
 springs.o: ./custom_modules/springs.cpp
 	$(COMPILE_COMMAND) -c ./custom_modules/springs.cpp
+
+Ellipsoid_Cells.o: ./custom_modules/Ellipsoid_Cells.cpp
+	$(COMPILE_COMMAND) -c ./custom_modules/Ellipsoid_Cells.cpp
+
+multivoxel_utilities.o: ./custom_modules/multivoxel_utilities.cpp
+	$(COMPILE_COMMAND) -c ./custom_modules/multivoxel_utilities.cpp
+
+cryo_parameters.o: ./custom_modules/cryo_parameters.cpp
+	$(COMPILE_COMMAND) -c ./custom_modules/cryo_parameters.cpp
+
+custom_connections.o: ./custom_modules/custom_connections.cpp
+	$(COMPILE_COMMAND) -c ./custom_modules/custom_connections.cpp
+
+membranes_and_vessels.o: ./custom_modules/membranes_and_vessels.cpp
+	$(COMPILE_COMMAND) -c ./custom_modules/membranes_and_vessels.cpp
+
 # cleanup
 
 reset-reset-reset:
