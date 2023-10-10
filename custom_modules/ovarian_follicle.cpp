@@ -1,6 +1,7 @@
 #include "./ovarian_follicle.h"
 #include "./springs.h"
 #include "./follicle_utilities.h"
+#include <cmath>
 #include <iostream>
 #include <omp.h>
 #include <algorithm>
@@ -932,6 +933,15 @@ std::vector<std::vector<double>> create_polygon_positions(double cell_radius,std
 	return cells;
 
 }
+bool inside_hexagon(double x, double y, double hexagon_outter_radius)
+{
+  bool result=false;
+  double hex_norm=std::max(std::abs(y),(std::abs(y)+(std::sqrt(3)*std::abs(x)))/2);
+  if(hex_norm<=hexagon_outter_radius){
+    result=true;
+  }
+  return result;
+}
 std::vector<std::vector<double>> create_hepato_positions(double cell_radius,
                                                          double sphere_radius, 
                                                          std::vector<std::vector<double>> hole_centers, 
@@ -958,8 +968,9 @@ std::vector<std::vector<double>> create_hepato_positions(double cell_radius,
 				tempPoint[0]=x + (zc%2) * 0.5 * cell_radius;
 				tempPoint[1]=y + (xc%2) * cell_radius;
 				tempPoint[2]=z;
-				cells.push_back(tempPoint);		
-							
+        if(inside_hexagon(x,y,sphere_radius)==true){
+				  cells.push_back(tempPoint);		
+        }
 	
 			}
 
@@ -1308,7 +1319,7 @@ void setup_liver(){
   std::vector<Cell*> sinusoids={};
   std::vector<std::vector<double>> hole_centers={{0,0,0},{250,300,0},{-250,300,0},
     {300,0,0},{-300,0,0},{250,-300,0},{-250,-300,0}};
-  std::vector<double>hole_radii={50,25,25,25,25,25,25};
+  std::vector<double>hole_radii={90,30,40,25,35,45,25};
   bez_curve_3 one;
   one.initalize(1);
   one.set_end_points({50,50}, {250,300});
@@ -1423,7 +1434,7 @@ void setup_liver(){
     Cell* temp_cell=(*all_cells)[i];
     sinusoids.push_back(temp_cell);
   }
-  std::vector<std::vector<double>> hepato=create_hepato_positions(14.5, 400, hole_centers, hole_radii,sinusoids);
+  std::vector<std::vector<double>> hepato=create_hepato_positions(14.5, 450, hole_centers, hole_radii,sinusoids);
   for( int j=0; j < hepato.size(); j++ )
 		{
 			Cell* pCell_hepato;//placed this inside of the loop since it makes more sense to me
