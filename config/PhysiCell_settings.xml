@@ -13,7 +13,7 @@
 	</domain>
 	
 	<overall>
-		<max_time units="sec">300</max_time> 
+		<max_time units="sec">1500</max_time> 
 		<time_units>min</time_units>
 		<space_units>micron</space_units>
 	
@@ -35,8 +35,8 @@
 		</full_data>
 		
 		<SVG>
-			<interval units="sec">.5</interval>
-			<enable>false</enable>
+			<interval units="sec">1.0</interval>
+			<enable>true</enable>
 		</SVG>
 		
 		<legacy_data>
@@ -209,7 +209,7 @@
 <!-- selected simulation allows simulations to be switched between EG, GLY, PBS and EG with GLY, using 1,2,3 and 4 respectively and 5,6,7 for karlsson EG,DMSO,PROH -->
   <selected_simulation type="int" units="dimensionless" description="">3</selected_simulation>
 <!-- selected_PBS_concentration allows PBS simulations to be switched between 0.5xPBS, 1xPBS, 2xPBS and 5xPBS using 0,1,2 and 5 respectively-->
-  <selected_PBS_simulation type="int" units="xPBS" description="">2</selected_PBS_simulation>
+  <selected_PBS_simulation type="int" units="xPBS" description="">0</selected_PBS_simulation>
       <temperature type="double" units="degrees" description="">293.15</temperature>
       <gas_constant type="double" units="10^-3 J/mole*k" description="">0.08205</gas_constant>
 <!-- volume and surface area are derived from radius of sphere-->

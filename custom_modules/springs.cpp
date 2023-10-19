@@ -4,19 +4,8 @@
 // Note this was built for PhysiCell v1.10 but it should work with future versions
 // TODO Someday: this class could be improved with the addition of some vector <int> for passing voxel indicies around
 
-
-#include "../core/PhysiCell.h"
-#include "../modules/PhysiCell_standard_modules.h"
-#include <cmath>
-#include <cstdlib>
-#include <fstream>
-#include <iostream>
-#include <omp.h>
-#include <memory>
-#include <stdexcept>
-
-#include "follicle_utilities.h"
-#include "springs.h"
+#include "./follicle_utilities.h"
+#include "./springs.h"
 using namespace BioFVM;
 using namespace PhysiCell;
 //double V_wbar=18.015/1000; //ml/mol->l/mol partial molar water volume
@@ -118,7 +107,7 @@ void Spring_Cell::initialize_mechanics()
 {
   
   previous_position=this->m_my_pCell->position;
-  previous_velocity=this->m_my_pCell->position;
+  previous_velocity=this->m_my_pCell->velocity;
   return;
 }
 //     Cryo_State_Variables(int solute_num);
@@ -429,7 +418,7 @@ void Spring_Cell::two_p_update_volume()
   // std::cout<<"exterior_osmolality: "<<this->exterior_osmolality<<"\n";
   // std::cout<<"interior_osmolality: "<<this->interior_osmolality<<"\n";
     double total_solute_volume=0.0;
-    #pragma omp reduction(+:total_solute_volume)
+    // #pragma omp reduction(+:total_solute_volume)
     for (size_t i = 0; i < this->solute_moles.size(); i++)
     {
         total_solute_volume+=(this->solute_specific_volume)[i]*(this->solute_moles)[i];

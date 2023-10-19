@@ -1,7 +1,8 @@
 #ifndef __SPRINGS_H__
 #define __SPRINGS_H__
 
-#pragma once
+#include <memory>
+#include <stdexcept>
 #include "../core/PhysiCell.h"
 #include "../modules/PhysiCell_standard_modules.h"
 #include <cmath>
