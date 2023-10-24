@@ -1,7 +1,6 @@
 #ifndef __OVARIAN_FOLLICLE_H__
 #define __OVARIAN_FOLLICLE_H__
 
-#pragma once
 #include "../core/PhysiCell.h"
 #include "../modules/PhysiCell_standard_modules.h"
 #include <cmath>

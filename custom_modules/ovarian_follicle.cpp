@@ -34,9 +34,9 @@ Cell_Definition oocyte_cell;
 Cell_Definition granulosa_cell;
 std::string output_filename;
 
-double k_granulosa=9000;
-double k_oocyte=9000;
-double k_basement=900;
+double k_granulosa=5;
+double k_oocyte=5;
+double k_basement=5000;
 std::vector<std::string> my_coloring_function( Cell* pCell )
 { return paint_by_number_cell_coloring(pCell); }
 std::vector<std::string> follicle_coloring_function( Cell* pCell )//function for coloring cells in SVG output
@@ -90,15 +90,15 @@ void spring_cell_functions(Cell* pCell, Phenotype& phenotype, double dt)
 {
   
   Spring_Cell* SPcell=spring_cell_by_pCell_index[pCell->index];
+  //sum velocities from non_connected_neighbor_pressure
+  //sum velocities from intercellular connections
+  //sum velocities from basement membrane 
+  update_all_forces(pCell,dt,pCell->custom_data["spring_constant"]);
   //update_external_concentration and spring cell values
   //2P reaction terms and volume change
   //update internal concentations and spring cell values
   //pass it all back to pCell
   two_parameter_single_step(pCell,phenotype,dt);
-  //sum velocities from non_connected_neighbor_pressure
-  //sum velocities from intercellular connections
-  //sum velocities from basement membrane 
-  update_all_forces(pCell,dt,pCell->custom_data["spring_constant"]);
   
   // if oocyte break connections that are past the max breakage distance
   if(pCell->type==1){
@@ -107,6 +107,7 @@ void spring_cell_functions(Cell* pCell, Phenotype& phenotype, double dt)
   }
   return;
 }
+bool broke_BM=false;
 void output_tzp_score(Cell* pCell, Phenotype& phenotype, double dt)
 {
   // check that cell is the oocyte
@@ -114,8 +115,8 @@ void output_tzp_score(Cell* pCell, Phenotype& phenotype, double dt)
     Spring_Cell* SPcell=spring_cell_by_pCell_index[pCell->index];
     double tzp_score=(double)(SPcell->m_springs.size())/(double)(SPcell->initial_number_of_connections);
     if (SPcell->is_outside==true)
-    {tzp_score=-1.0;}
-    if (PhysiCell_globals.current_time>299.9) {
+    {tzp_score=-20.0;}
+    if (PhysiCell_globals.current_time>(PhysiCell_settings.max_time-dt)) {
       std::ofstream ofs;
       ofs.open ("./output/TZP_score.csv", std::ofstream::out | std::ofstream::app);
       ofs << parameters.ints("selected_simulation")<<", "<< default_microenvironment_options.Dirichlet_condition_vector<<PhysiCell_globals.current_time<<", "<<pCell->type<<", "<<tzp_score<<", "<< k_oocyte<<", "<<k_granulosa<<", "<< k_basement<<"\n";
@@ -160,6 +161,7 @@ void create_cell_types( void )
 	cell_defaults.functions.update_phenotype = NULL;
 	// add the extra bit of "attachment" mechanics
 	cell_defaults.functions.custom_cell_rule = NULL;
+	cell_defaults.functions.update_velocity = NULL;
 	cell_defaults.name = "the default cell";
 	cell_defaults.type = 0;
 	// add custom data
@@ -236,7 +238,7 @@ void create_oocyte_cell_type(void)
 	oocyte_cell.custom_data["Vb_fraction"]=.288;
   oocyte_cell.custom_data.add_variable("basement_k","unitless",k_basement);
 	oocyte_cell.custom_data.add_variable("spring_constant","N/m",k_oocyte);
-	oocyte_cell.custom_data.add_variable("max_breakage_distance","um",10);
+	oocyte_cell.custom_data.add_variable("max_breakage_distance","um",15);
   oocyte_cell.custom_data.add_variable("max_interaction_distance","unitless",15);
 	return;
 }
@@ -257,10 +259,10 @@ void oocyte_phenotype_rule( Cell* pCell, Phenotype& phenotype, double dt )
   output_tzp_score(pCell, phenotype, dt);
   int thread_id=omp_get_thread_num();
   spring_cell_functions(pCell,phenotype,dt);	
- //  std::ofstream ofs;
-	// ofs.open ("./output/oocyte_output.csv", std::ofstream::out | std::ofstream::app);
- //  ofs <<parameters.ints("selected_simulation")<<", "<< default_microenvironment_options.Dirichlet_condition_vector<<", "<<PhysiCell_globals.current_time<<", "<<pCell->type_name<<", "<< pCell->phenotype.volume.total<<", "<<pCell->position[0]<<", "<<pCell->position[1]<<", "<<pCell->position[2]<<", "<<SPcell->m_springs.size() <<", "<<k_oocyte<<", "<<k_granulosa<<", "<<k_basement<<"\n";
-	// ofs.close();
+  std::ofstream ofs;
+	ofs.open ("./output/oocyte_output.csv", std::ofstream::out | std::ofstream::app);
+  ofs <<parameters.ints("selected_simulation")<<", "<< default_microenvironment_options.Dirichlet_condition_vector<<", "<<PhysiCell_globals.current_time<<", "<<pCell->type_name<<", "<< pCell->phenotype.volume.total<<", "<<pCell->position[0]<<", "<<pCell->position[1]<<", "<<pCell->position[2]<<", "<<SPcell->m_springs.size() <<", "<<k_oocyte<<", "<<k_granulosa<<", "<<k_basement<<"\n";
+	ofs.close();
   // std::cout<<"VOLUME:"<<pCell->phenotype.volume.total<<"\n"; 
   
 	return;
@@ -343,7 +345,7 @@ void create_granulosa_cell_type( void )
 	// set custom data values
 	// Parameter<double> paramD;
 	granulosa_cell.custom_data.add_variable("basement_k","unitless",k_basement);
-  granulosa_cell.custom_data.add_variable("neighborhood_radius","unitless",7.5);//radius beyond cell surface where connections occur
+  granulosa_cell.custom_data.add_variable("neighborhood_radius","unitless",8);//radius beyond cell surface where connections occur
 	granulosa_cell.custom_data[ "initial_volume" ] = parameters.doubles("gran_isotonic_volume");//523.6;
 	granulosa_cell.custom_data.add_variable("connection_length","micometers",0.5);
 	granulosa_cell.custom_data["surface_area"]= 314.159;//parameters.doubles("granulosa_Area");
@@ -370,6 +372,9 @@ void granulosa_phenotype_rule( Cell* pCell, Phenotype& phenotype, double dt )
   // two_parameter_single_step(pCell,phenotype, dt);
  //  // std::cout<<" FORCE PARAM: "<< k_oocyte<<", "<<k_granulosa<<", "<<k_basement<<"\n";
   spring_cell_functions(pCell,phenotype,dt);
+  if(pCell->phenotype.geometry.radius<=2.5){
+    std::cout<<"RADIUS SHRUNK: "<< pCell->phenotype.geometry.radius<<"\n";
+  }
   // if(count%100==0){
   //   std::ofstream ofs;
   //   ofs.open ("./output/2p_Test_granulosa.csv", std::ofstream::out | std::ofstream::app);
@@ -612,6 +617,7 @@ void setup_microenvironment( void )
 }
 void setup_secondary_stage_follicle(void)
 {
+  std::vector <double> initial_velocity={0.0,0.0,0.0};
   double initial_granulosa_radius=parameters.doubles("gran_radius"); 
   double initial_oocyte_radius=parameters.doubles("oocyte_radius");
 	double initial_overlap=.1;//representation of the initial packing density -- taken from physicell simulations of cancer spheroids
@@ -626,6 +632,7 @@ void setup_secondary_stage_follicle(void)
 	pCell_oocyte->assign_position(0,0,0); //assign oocyte position
 	//pC->set_total_volume(817283); //sets initial total volume manually
 	pCell_oocyte->set_total_volume(pCell_oocyte->custom_data["initial_volume"]);//will set cell to custom value
+  pCell_oocyte->velocity=initial_velocity;                                                                            //
 	//create granulosa
 	std::cout << "\tPlacing granulosa cells ... " << "\n";
 	std::vector<std::vector<double>> granulosa_positions = create_cell_sphere_positions(cell_spacing,follicle_radius,initial_oocyte_radius);//hollow spheroid around centered oocyte
@@ -636,6 +643,7 @@ void setup_secondary_stage_follicle(void)
 		pCell_granulosa = create_cell(granulosa_cell); //
 		pCell_granulosa->assign_position( granulosa_positions[i] );
 		pCell_granulosa->set_total_volume(pCell_granulosa->custom_data["initial_volume"]);
+		pCell_granulosa->velocity=initial_velocity;
 	}
   std::cout<<"Follicle is... "<< follicle_radius<<" um in radius."<<"\n";
 	return;

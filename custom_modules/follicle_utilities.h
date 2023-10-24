@@ -1,8 +1,5 @@
 #ifndef __FOLLICLE_UTILITIES_H__
 #define __FOLLICLE_UTILITIES_H__
-
-#pragma once
-
 #include "../core/PhysiCell.h"
 #include "../modules/PhysiCell_standard_modules.h"
 #include <cmath>
@@ -10,6 +7,10 @@
 #include <fstream>
 #include <iostream>
 #include <omp.h>
+#include <cstddef>
+#include <unordered_map>
+#include <memory>
+#include <vector>
 #include "./springs.h"
 using namespace BioFVM;
 using namespace PhysiCell;
@@ -49,7 +50,8 @@ void cells_in_me(Cell *pCell, std::vector<Cell*> *return_cells_in_me); // uses m
 
 void find_basement_membrane_voxels (std::vector<double> center_of_sphere, std::vector<double> radius_of_sphere);
 
-void Hookes_law_force (std::vector<double> &direction, double &rest_length, double &current_length, double &spring_constant, std::vector<double> *return_force);
+void Hookes_law_force_vector(std::vector<double> &my_position, std::vector<double> &neighbor_position, std::vector<double> &equilibrium,double &spring_constant, std::vector<double> *return_force); 
+void Hookes_law_force_magnitude(std::vector<double> &my_position, std::vector<double> &neighbor_position, double &equilibrium_length, double &current_length, double &spring_constant, std::vector<double> *return_force);
 void output_all_voxels_concentrations();
 double Adams_Bashforth_ODE_2nd_Order (double y_value, double prev_df_dt, double df_dt, double step_size);
 std::vector<double> Adams_Bashforth_ODE_2nd_Order(std::vector<double> Y_values, std::vector<double> prev_df_dts, std::vector<double> df_dts, double step_size);
