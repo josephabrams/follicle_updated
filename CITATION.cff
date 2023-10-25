@@ -1,0 +1,14 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: PhysiCell Model of Ovarian Follicle CPA Equilibration
+message: 'Please cite me if you use this code, thank you!'
+type: software
+authors:
+  - given-names: Joseph
+    name-particle: E.S.
+    family-names: Abrams
+    email: joseph.abrams@usask.ca
+    affiliation: University of Saskatchewan
+    orcid: 'https://orcid.org/0009-0003-8108-6933'
