@@ -13,6 +13,7 @@
 #include <iostream>
 #include <omp.h>
 #include <vector>
+#include "cryo_utilities.h"
 using namespace BioFVM;
 using namespace PhysiCell;
 
