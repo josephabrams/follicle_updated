@@ -1,5 +1,11 @@
-This is a fork of PhysiCell from https://github.com/MathCancer/PhysiCell/
+*This is a fork of PhysiCell* from https://github.com/MathCancer/PhysiCell/ 
 The code uses v1.10 of PhysiCell
+
+**Note: This is a work in progress. Some core code was minorly altered to allow svg outputs in seconds instead of minutes and to the operator overide for streaming out vectors (this version they cout as comma separated). All custom modules will function without these minor changes, and they were simply for my convenience. I am currently refactoring and cleaning up this repository, so expect frequent changes - note that branches beside the main branch are essentially my developing other features for my PhD project/side projects.**
+
+If you use this code in part or all, please cite me and the original PhysiCell since this would all be impossible without them. (like and subscribe for academics?) There is a git cite file in the repository.
+
+
 The only base PhysiCell file modified is modules/PhysiCell_Pathology.cpp, SVG plots have been altered to display seconds, minutes and hours instead of minutes, hours and days. This is optional to the working of the code. 
 Several experimental files in custom_modules are not utilized. See the main.cpp include statements for which files are being used. Eventually, time permitting, I will clean up this repo, refactor the code to just the essentials, and expand the documentation.
 Until then, please cite this repository if you use this code.
