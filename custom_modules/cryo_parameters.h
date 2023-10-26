@@ -1,6 +1,6 @@
 /* Author: Joseph E.S. Abrams
  * Please cite if you use this code
- * This is a library of functions and paramaters for simualting cells and tissue undergoing cryopreservation*/
+ * This is part of a library of functions and paramaters for simualting cells and tissue undergoing cryopreservation*/
 
 #ifndef __CRYO_PARAMETERS_H__
 #define __CRYO_PARAMETERS_H__

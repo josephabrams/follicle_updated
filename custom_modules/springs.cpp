@@ -2,7 +2,6 @@
 //This file and the associated header contain a custom class to enfold the standard cell class in physicell
 //Author Joseph Abrams
 // Note this was built for PhysiCell v1.10 but it should work with future versions
-// TODO Someday: this class could be improved with the addition of some vector <int> for passing voxel indicies around
 
 #include "./follicle_utilities.h"
 #include "./springs.h"
@@ -62,6 +61,7 @@ const std::vector <double> Spring_Cell::kdiss={1.678,1.0,1.0,1.678};//{HM,EG,GLY
 const std::vector <double> Spring_Cell::virial_B={0.044,0.037,0.023,0.044};
 const std::vector <double> Spring_Cell::virial_C={0.0,0.0,-0.001,0.0};
 const std::vector <double> Spring_Cell::molar_mass={58.44,62.07,92.09,58.44};// note HM and PBS can have different molar masses depending on fomulation (especially with disodium phosphate) but we treat them as NaCl
+
 Spring_Cell::Spring_Cell(Cell* pCell)//(Cell* pCell,Phenotype& phenotype)
 {
   simulation_selected=parameters.ints("selected_simulation");
