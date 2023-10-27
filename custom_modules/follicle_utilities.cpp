@@ -1,4 +1,13 @@
 #include "./follicle_utilities.h"
+#include "follicle_utilities.h"
+#include "springs.h"
+#include <cmath>
+#include <cstddef>
+#include <fstream>
+#include <unordered_map>
+#include <memory>
+#include <vector>
+#include <algorithm> 
 // #include "./springs.h"
 using namespace BioFVM;
 using namespace PhysiCell;
@@ -229,6 +238,7 @@ void get_interior_voxels(Cell* pCell, std::vector<int>* return_interior_voxel_in
     
     std::vector<int> interior_voxels={};
     // #pragma omp private(interior_voxels)
+
     for (size_t i = 0; i < bounding_voxels.size(); i++)
     {
       std::vector<double> test_voxel_center=pCell->get_container()->underlying_mesh.voxels[bounding_voxels[i]].center;
@@ -509,8 +519,8 @@ void non_connected_neighbor_pressure(Cell* pCell, double dt, double spring_const
   {
     non_connected_neighbors.assign(possible_neighbors.begin(),possible_neighbors.end());
   }
-  // std::cout<<"non connected neighbors list"<<
-  // non_connected_neighbors.size()<< std::endl;
+
+
   double sum_x_acceleration =0.0;// pCell->velocity[0];
   double sum_y_acceleration =0.0; //pCell->velocity[1];
   double sum_z_acceleration =0.0;// pCell->velocity[2];
@@ -1160,8 +1170,8 @@ void custom_add_potentials(Spring_Cell* SpCell, double dt)
       Hookes_law_force_magnitude(SpCell->m_my_pCell->position,SpCell->m_springs[i]->m_pNeighbor->position,SpCell->m_springs[i]->m_length,spring_stretch,SpCell->m_my_pCell->custom_data["cell_k"], &force);
     //if any component of the force is less than 1.0*10^-16 set that equal to 0 to avoid floating decimal issues
     sum_of_forces_private+= force;
-    if(SpCell->m_my_pCell->index==5)
-    {
+    // if(SpCell->m_my_pCell->index==5)
+    // {
       // std::cout<<"spring stretch: "<<spring_stretch<<"\n";
        // std::cout<<"equilibrium_length: "<<SpCell->m_springs[i]->m_length<<"\n";
        // std::cout<<"difference: "<< SpCell->m_springs[i]->m_length-spring_stretch<<"\n";
@@ -1169,19 +1179,19 @@ void custom_add_potentials(Spring_Cell* SpCell, double dt)
     //std::cout<<"force_direction "<<force_direction<<"\n";
     //std::cout<<"force_direction "<<force_direction<<"\n";
     // f/m=a=dv/dt
-    }
+    // }
   }
   
   #pragma omp critical
   {
-    if(SpCell->m_my_pCell->index==5)
-    {
+    // if(SpCell->m_my_pCell->index==5)
+    // {
       // std::cout<<"previous_velocity: "<<SpCell->previous_velocity<<std::endl;
      // std::cout<<"sum of forces: "<<sum_of_forces_private<<std::endl;
       // std::cout<<"size of neighbor: "<<SpCell->m_springs.size()<<"\n";
       // std::cout<<"first neighbor: "<<SpCell->m_springs[0]->m_pNeighbor<<"\n";
       // std::cout<<"equilibrium_length: "<<SpCell->m_springs[0]->m_length<<"\n";
-    }
+    // }
       // sum_of_forces.insert(sum_of_forces.end(),sum_of_forces_private.begin(),sum_of_forces_private.end());
     sum_of_forces[0]=(dt*sum_of_forces_private[0]/SpCell->m_my_pCell->phenotype.volume.total); //f/m=a=(dv/dt) in x
     sum_of_forces[1]=(dt*sum_of_forces_private[1]/SpCell->m_my_pCell->phenotype.volume.total); //f/m=a=(dv/dt) in y
@@ -1196,12 +1206,12 @@ void custom_add_potentials(Spring_Cell* SpCell, double dt)
     }  
     SpCell->m_my_pCell->velocity=SpCell->previous_velocity+sum_of_forces;//Forward_Euler
     SpCell->previous_velocity=SpCell->m_my_pCell->velocity;
-    if(SpCell->m_my_pCell->index==5)
-    {
+    // if(SpCell->m_my_pCell->index==5)
+    // {
       // std::cout<<"acceleration: "<<sum_of_forces<<std::endl;
       // std::cout<<"position: "<<SpCell->m_my_pCell->position<<std::endl;
       // std::cout<<"velocity: "<<SpCell->m_my_pCell->velocity<<std::endl;
-    }
+    // }
   }
   // std::cout<< "some velocities: "<< SpCell->m_my_pCell->velocity<<"\n";
   return;
@@ -1252,7 +1262,7 @@ void spring_cells_in_neighborhood(Spring_Cell* SpCell, double maximum_interactio
 }
 void initialize_spring_connections()//also initialize mechanics and 2p vectors which probably should be done elsewhere
 {
-  // std::cout<<"initializing connections!"<<"\n"; 
+  std::cout<<"initializing connections!"<<"\n"; 
   //using modified moore neighborhood search for "spring cell" neighbors and connect them with spring objects
   for(size_t i=0;i<all_spring_cells.size();i++) //loop through all spring cells
   {
@@ -1390,7 +1400,7 @@ void update_exterior_concentrations(Spring_Cell* SPcell)
 }
 void initialize_spring_cells()//make all cells spring cells
 {
-  // std::cout<<"Initializing Spring Cells"<<"\n";
+  std::cout<<"Initializing Spring Cells"<<"\n";
   //encapsulate all cells in the super class spring cell
   //find initial spring lengths and connect neighbors
   //set up basement membrane and connected exterior cells
