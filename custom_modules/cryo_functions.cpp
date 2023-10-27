@@ -1,5 +1,7 @@
 #include "cryo_functions.h"
+#include "cryo_parameters.h"
 #include "cryo_utilities.h"
+#include "multivoxel_utilities.h"
 #include <cstddef>
 #include <cstdlib>
 namespace cryo_parameters{
@@ -62,6 +64,56 @@ void set_2p_initial_conditions(Cell* pCell, Cryo_Parameters &cryo_p)
   
   }
   return;
+}
+
+//the pCell and cryo_p must be linked
+//
+double concentration_at_boundary(Cell* pCell, int solute_index, Cryo_Parameters &cryo_p)
+{
+  //previously used microenvironment.nearest_density_vector(boundary_point)[solute]
+  //internalized substrates is the vector of substrates inside the cell (inside basic agent)
+  double average=0;
+  double sum=0;
+  std::vector <int> exterior_voxel_index={};
+  // exterior_voxel_index=get_exterior_voxels(pCell);
+  /* the following code commented out shows how you can speed up the simulation by reducing the need to get the uptake voxels if they haven't changed*/
+  // Spring_Cell* SPcell=spring_cell_by_pCell_index[pCell->index];
+  // if(norm(SPcell->previous_position-pCell->position)>default_microenvironment_options.dx && std::abs(SPcell->previous_radius-pCell->phenotype.geometry.radius)>default_microenvironment_options.dx)
+  // {
+  //   get_intersecting_voxels(pCell,&(SPcell->uptake_voxels));
+  //   // #pragma omp critical
+  //   // {
+  //   //   SPcell->uptake_voxels.insert(SPcell->uptake_voxels.end(),exterior_voxel_index.begin(),exterior_voxel_index.end() );
+  //   // }
+  //
+  // } 
+  get_intersecting_voxels(pCell, &cryo_p.uptake_voxels);
+  if(cryo_p.uptake_voxels.size()<2)//for cells smaller than or approx. equal to one voxel
+  {
+    average=microenvironment.nearest_density_vector( microenvironment.nearest_voxel_index(pCell->position))[solute_index];
+  }
+  else 
+  {
+    // #pragma omp reduction(+:sum)
+    for (size_t i = 0; i < cryo_p.uptake_voxels.size(); i++)
+    {
+       // std::cout<<" concentration "<<microenvironment.nearest_density_vector(exterior_voxel_index[i] )[solute_index]<<"\n";
+        //std::cout<<" exterior voxel index"<< exterior_voxel_index[i]<<"\n";
+        //std::cout<<" concentration for sum: "<<microenvironment.nearest_density_vector(exterior_voxel_index[i] )[solute_index]<<"\n";
+      if(microenvironment.nearest_density_vector(cryo_p.uptake_voxels[i])[solute_index]<1e-16)// to deal with numerical instability from tiny inirial diffusion values inside rasterized cell
+      {
+          sum+=0.0;
+      }
+      else {
+        sum+=microenvironment.nearest_density_vector( cryo_p.uptake_voxels[i])[solute_index];
+      }
+    }
+    #pragma omp critical
+    {
+      average=sum/cryo_p.uptake_voxels.size();
+    }
+  } 
+  return average; 
 }
 // using namespace Springs;
 //  #include <stdef.h>

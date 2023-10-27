@@ -44,3 +44,5 @@ double ternary_virial(double molality_1, double molality_2, std::string componen
   // std::cout<<"Osmole "<< osmolality<< "\n";
     return osmolality;
 }
+
+
