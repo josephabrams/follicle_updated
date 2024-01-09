@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstddef>
 #include <fstream>
+#include <string>
 #include <unordered_map>
 #include <memory>
 #include <vector>
@@ -146,6 +147,48 @@ void get_voxel_corners(std::vector<double> &voxel_center, std::vector<std::vecto
   }
   return;
 }
+void get_voxel_faces(std::vector<double> &voxel_center, std::vector<std::vector<double>> &return_faces)
+{
+  //find all 8 corners of the voxel cube
+  double zz=default_microenvironment_options.dz/2.0;
+  double yy=default_microenvironment_options.dy/2.0;
+  double xx=default_microenvironment_options.dx/2.0;
+  std::vector <std::vector <double>> faces(6,std::vector<double>(3,0.0));
+  //x's 
+  //y's 
+  //z's 
+  
+  int count=0;
+  for (int i = -1; i < 2; i+=2)
+  {
+    std::vector<double> temp_point={-1*xx*i,0.0,0.0};
+    faces[count]=voxel_center+temp_point;
+    count++;
+  }
+  for (int i = -1; i < 2; i+=2)
+  {
+    std::vector<double> temp_point={0.0,-1*yy*i,0.0};
+    faces[count]=voxel_center+temp_point;
+    count++;
+  }
+  for (int i = -1; i < 2; i+=2)
+  {
+    std::vector<double> temp_point={0.0,0.0,-1*zz*i};
+    faces[count]=voxel_center+temp_point;
+    count++;
+  }
+  #pragma omp critical
+  {
+    return_faces[0].assign(faces[0].begin(),faces[0].end());
+    return_faces[1].assign(faces[1].begin(),faces[1].end());
+    return_faces[2].assign(faces[2].begin(),faces[2].end());
+    return_faces[3].assign(faces[3].begin(),faces[3].end());
+    return_faces[4].assign(faces[4].begin(),faces[4].end());
+    return_faces[5].assign(faces[5].begin(),faces[5].end());
+  }
+  return;
+
+}
 void get_intersecting_voxels(Cell* pCell,std::vector<int>* return_intersecting_voxel_indicies)
 {
    //if voxel is edge voxel count as exterior
@@ -154,15 +197,22 @@ void get_intersecting_voxels(Cell* pCell,std::vector<int>* return_intersecting_v
     std::vector<int> bounding_voxels={};
     diffusion_bounding_box(pCell,&bounding_voxels);
     std::vector<int> intersecting_voxels={};
+    std::cout<<"BOUNDING BOX SIZE: "<< bounding_voxels.size()<<"\n";
+    if(bounding_voxels.size()==1)
+    { 
+       return_intersecting_voxel_indicies->assign(bounding_voxels.begin(), bounding_voxels.end());
 
+      return;
+    }
     for (size_t i = 0; i < bounding_voxels.size(); i++)
     {
       std::vector<double> test_voxel_center=pCell->get_container()->underlying_mesh.voxels[bounding_voxels[i]].center;
       std::vector<std::vector <double>> test_corners(8,std::vector<double>(3,0.0));
+      // std::vector<std::vector <double>> test_faces(6,std::vector<double>(3,0.0));
       get_voxel_corners(test_voxel_center,test_corners);
-    
-     
+      // get_voxel_faces(test_voxel_center,test_faces);
       int sum=0;
+      int face_count=0;
       // #pragma omp private(sum,intersecting_voxels)
       for(size_t j =0; j<test_corners.size();j++)
       {
@@ -171,17 +221,55 @@ void get_intersecting_voxels(Cell* pCell,std::vector<int>* return_intersecting_v
         {
           sum+=1;
         }
+        
       }
-      
+      // check if no corners are intersected but faces still are can happen when cells smaller than voxel 
+      // if(sum==0)
+      // {
+      //     if((pCell->position[0]+pCell->phenotype.geometry.radius)>test_faces[0][0] && (pCell->position[0]-pCell->phenotype.geometry.radius)<test_faces[1][0] ){
+      //       //right side>=left side of voxel
+      //       face_count+=1;
+      //     }
+      //     if((pCell->position[0]-pCell->phenotype.geometry.radius)<test_faces[1][0] && (pCell->position[0]+pCell->phenotype.geometry.radius)>test_faces[0][0] ){
+      //       //left side<= right side of voxel
+      //       face_count+=1;
+      //       
+      //     } 
+      //     if((pCell->position[1]+pCell->phenotype.geometry.radius)>test_faces[2][1] && (pCell->position[1]-pCell->phenotype.geometry.radius)<test_faces[3][1] ){
+      //       //top of cell>= bottom of voxel 
+      //       face_count+=1;
+      //
+      //     }
+      //     if((pCell->position[1]-pCell->phenotype.geometry.radius)<test_faces[3][1] && (pCell->position[1]+pCell->phenotype.geometry.radius)>test_faces[2][1] ){
+      //       //bottom of cell <= top of voxel
+      //       face_count+=1;
+      //       
+      //     }
+      //     if((pCell->position[2]+pCell->phenotype.geometry.radius)>test_faces[4][2] && (pCell->position[2]-pCell->phenotype.geometry.radius)<test_faces[5][2]){
+      //       //front of cell >= back of voxel
+      //       face_count+=1;
+      //       
+      //     }
+      //     if((pCell->position[2]-pCell->phenotype.geometry.radius)<test_faces[5][2] && (pCell->position[2]+pCell->phenotype.geometry.radius)>test_faces[4][2]){
+      //       //back of cell <= front of voxel
+      //       face_count+=1;
+      //     }      
+      //     
+      // }
       if(sum!=8 && sum !=0)
       {
         intersecting_voxels.push_back(bounding_voxels[i]);
       }
-
+      // if(face_count>0 && face_count<6)
+      // {
+      //   std::cout<<"FACE COUNT!! :"<<face_count<<"\n";
+      //   intersecting_voxels.push_back(bounding_voxels[i]);
+      // }
     }
     #pragma omp critical
     {
-      return_intersecting_voxel_indicies->assign(intersecting_voxels.begin(),intersecting_voxels.end());
+    //// #TODO: fix this!! 
+      return_intersecting_voxel_indicies->assign(bounding_voxels.begin(),bounding_voxels.end());
       //return_intersecting_voxel_indicies->insert(return_intersecting_voxel_indicies->end(), intersecting_voxels.begin(), intersecting_voxels.end());
     }
 
@@ -335,19 +423,28 @@ double concentration_at_boundary(Cell* pCell, int solute_index)
   std::vector <int> exterior_voxel_index={};
   // exterior_voxel_index=get_exterior_voxels(pCell);
   Spring_Cell* SPcell=spring_cell_by_pCell_index[pCell->index];
-  if(norm(SPcell->previous_position-pCell->position)>default_microenvironment_options.dx && std::abs(SPcell->previous_radius-pCell->phenotype.geometry.radius)>default_microenvironment_options.dx)
-  {
-    get_intersecting_voxels(pCell,&(SPcell->uptake_voxels));
+  
+  get_intersecting_voxels(pCell,&(SPcell->uptake_voxels));
+  // if(norm(SPcell->previous_position-pCell->position)>default_microenvironment_options.dx && std::abs(SPcell->previous_radius-pCell->phenotype.geometry.radius)>default_microenvironment_options.dx)
+  // {
+    // get_intersecting_voxels(pCell,&(SPcell->uptake_voxels));
+    std::cout<<"SIZE!!!!!: "<< SPcell->uptake_voxels.size()<<"\n";
     // #pragma omp critical
     // {
     //   SPcell->uptake_voxels.insert(SPcell->uptake_voxels.end(),exterior_voxel_index.begin(),exterior_voxel_index.end() );
     // }
 
-  } 
+  // } 
   
   if(SPcell->uptake_voxels.size()<2)//for cells smaller than or approx. equal to one voxel
   {
+    SPcell->uptake_voxels={SPcell->m_my_pCell->get_current_voxel_index()};
+    // std::cout<<"SIZE!!!!!: "<< SPcell->uptake_voxels.size()<<"\n";
+    // std::cout<<"INDEX!!!!: "<< SPcell->uptake_voxels<<"\n";
     average=microenvironment.nearest_density_vector( microenvironment.nearest_voxel_index(pCell->position))[solute_index];
+       // std::cout<<"KAAHHHNNNN!!!! concentration "<<microenvironment.nearest_density_vector(pCell->position )[solute_index]<<"\n";
+        //std::cout<<" exterior voxel index"<< exterior_voxel_index[i]<<"\n";
+        // std::cout<<" concentration for sum: "<<microenvironment.nearest_density_vector(pCell->position)[solute_index]<<"\n";
   }
   else 
   {
@@ -356,7 +453,7 @@ double concentration_at_boundary(Cell* pCell, int solute_index)
     {
        // std::cout<<" concentration "<<microenvironment.nearest_density_vector(exterior_voxel_index[i] )[solute_index]<<"\n";
         //std::cout<<" exterior voxel index"<< exterior_voxel_index[i]<<"\n";
-        //std::cout<<" concentration for sum: "<<microenvironment.nearest_density_vector(exterior_voxel_index[i] )[solute_index]<<"\n";
+        // std::cout<<" concentration for sum: "<<microenvironment.nearest_density_vector(exterior_voxel_index[i] )[solute_index]<<"\n";
       if(microenvironment.nearest_density_vector(SPcell->uptake_voxels[i])[solute_index]<1e-16)// to deal with numerical instability from tiny inirial diffusion values inside rasterized cell
       {
           sum+=0.0;
@@ -824,7 +921,12 @@ void output_voxel_uptakes(Spring_Cell* SPcell,std::vector<Voxel> output_voxels)
     ofs.open ("./output/an_uptake.csv", std::ofstream::out | std::ofstream::app);
     std::vector<double> concentration=microenvironment.nearest_density_vector(temp_voxel.center);
 
-    ofs <<PhysiCell_globals.current_time<<", "<<temp_voxel.mesh_index<<", "<<temp_voxel.center[0]<<", "<<temp_voxel.center[1]<<", "<<temp_voxel.center[2]<<", "<<concentration[1]<<"\n";
+    ofs <<PhysiCell_globals.current_time<<", "<<temp_voxel.mesh_index<<", "<<temp_voxel.center[0]<<", "<<temp_voxel.center[1]<<", "<<temp_voxel.center[2]<<", ";
+    for(int j=0; j<concentration.size(); j++)
+    {
+      ofs <<concentration[j]<<", ";
+    }
+    ofs<<"\n";
     ofs.close();
   }
     return;
@@ -832,11 +934,13 @@ void output_voxel_uptakes(Spring_Cell* SPcell,std::vector<Voxel> output_voxels)
 
 void uptake_in_one_voxel(int voxel, double water_uptake_per_voxel, std::vector<double> solute_uptake_per_voxel, std::vector<double> specific_volumes )
 {
-
+  //current version of code assumes "infinite water bath" based on the phenomological 2P model
   double voxel_volume=default_microenvironment_options.dx*default_microenvironment_options.dy*default_microenvironment_options.dz;
   std::vector<double> temp_density_vec=microenvironment.density_vector(voxel);
   std::vector <double> moles_in_voxel;
+  std::vector <double> debug_moles_output;
   moles_in_voxel.resize(solute_uptake_per_voxel.size(),0.0);
+  debug_moles_output.resize(solute_uptake_per_voxel.size(),0.0);
   for(int i=0; i<solute_uptake_per_voxel.size(); i++)
   {
     moles_in_voxel[i]=(temp_density_vec[i]*voxel_volume);//fmole/um^3* um^3 
@@ -846,19 +950,44 @@ void uptake_in_one_voxel(int voxel, double water_uptake_per_voxel, std::vector<d
   // ofs <<PhysiCell_globals.current_time<<", "<<microenvironment.voxels(voxel).mesh_index<<", "<<microenvironment.voxels(voxel).center[0]<<", "<<microenvironment.voxels(voxel).center[1]<<", "<<microenvironment.voxels(voxel).center[2]<<", "<<microenvironment.density_vector(voxel)[1]<<", ";
    
   std::vector <double> new_moles=moles_in_voxel-solute_uptake_per_voxel;
-  double new_water_volume=voxel_volume-water_uptake_per_voxel;
+  double effective_water_from_diffusion=10*voxel_volume+water_uptake_per_voxel; //water from each voxel face+ my own
+  double new_water_volume=voxel_volume;
+  if (effective_water_from_diffusion<0)
+  {
+    std::cout<<"WARNING!! HIGH WATER UPTAKE!!\n";
+    new_water_volume=new_water_volume+effective_water_from_diffusion;
+  }
+  debug_moles_output=new_moles;
+  for(int i=0; i<new_moles.size(); i++)
+  {
+    std::cout<<"WARNING!! 2P UPTAKE HAS OUTPACED DIFFUSION!\n";
+    if(new_moles[i]<0) //cannot take moles that aren't there
+    {
+      new_moles[i]=0;
+    }
+  }
+  if(new_water_volume<=0)
+  {
+    std::cout<<"WARNING!! 2P WATER UPTAKE HAS OUTPACED DIFFUSION!\n";
+    new_water_volume=0.0000001;
+  }
   // ofs<< new_moles[1]<<", "<<moles_in_voxel[1]<<", "<<solute_uptake_per_voxel[1]<<", "<<new_water_volume<<", "<< voxel_volume<<", "<<water_uptake_per_voxel<<", "; 
+  std::ofstream ofs;
+  ofs.open("./output/uptake_in_one_voxel.csv", std::ofstream::out|std::ofstream::app);
+  ofs<<PhysiCell_globals.current_time<<", "<<voxel<<", "<< microenvironment.density_vector(voxel);
   // std::cout<<"new water volume: "<< new_water_volume<<"\n";
   for(int i=0; i<solute_uptake_per_voxel.size();i++)
   {
+    // ofs<<"old density: "<< microenvironment.density_vector(voxel)[i]<<",";
+    // std::cout<<"HOLEY MOLEY: "<< new_moles[i]<<"\n";
     // std::cout<<"old old: "<<microenvironment.density_vector(voxel)[i]<<"\n";
     // std::cout<<"old: "<<temp_density_vec[i]<<"\n";
     microenvironment.density_vector(voxel)[i]=new_moles[i]/new_water_volume;
     // std::cout<<"new: "<<microenvironment.density_vector(voxel)[i]<<"\n";
   }
   // ofs<<microenvironment.density_vector(voxel)[1]<<"\n ";
-
-   // ofs.close();
+  ofs<<microenvironment.density_vector(voxel)<<new_moles<<debug_moles_output<<new_water_volume <<solute_uptake_per_voxel<< "\n";
+  ofs.close();
 
   return;
 }
@@ -1065,6 +1194,7 @@ void max_interaction_variable_moore_neighborhood(Cell* pCell, double &maximum_in
 }
 void general_voxel_bounding_box(std::vector<int> *return_bounding_box,std::vector<double> &starting_position, std::vector <double>&ending_position, double &voxel_length, BioFVM::Cartesian_Mesh &a_mesh)
 {
+  //#TODO: review this figure out what is wrong
   //function to find a box of voxels in a cartesian mesh given the lowest corner to the highest, should work in 2D and 3D
   std::vector<int> bounding_box_by_index={-1};
   int starting_voxel_index=a_mesh.nearest_voxel_index(starting_position);// should work with pCell-get_container or microenvironment
@@ -1075,6 +1205,8 @@ void general_voxel_bounding_box(std::vector<int> *return_bounding_box,std::vecto
   {
     //contained entirely in 1 voxel my exterior is my voxel
     bounding_box_by_index[0]=starting_voxel_index;
+    return_bounding_box->assign(bounding_box_by_index.begin(),bounding_box_by_index.end());
+    return;
   }
   else{
    std::vector <int> num_voxels_across(3,0.0);
@@ -1769,4 +1901,34 @@ void output_cell_and_voxels(std::vector <int> voxel_list, Cell* pCell)
   ofs.close();
   }
   return;
+}
+
+void python_plot_cell_and_voxels(Cell* pCell, double dt)
+{
+  if(PhysiCell_globals.current_time<dt)
+  {
+    double voxel_length=default_microenvironment_options.dx;
+    Spring_Cell* SPcell=spring_cell_by_pCell_index[pCell->index];
+    std::string file= "./output/cell" +std::to_string(pCell->index)+"singe_cell_plot.py";
+    std::vector <double> cell_plot_position={50,50,50};
+    // std::vector <double> translation_vec=pCell->position-cell_plot_position;
+    std::ofstream ofs;
+    ofs.open (file, std::ofstream::out | std::ofstream::trunc);
+    ofs<<"import numpy as np\n"<<"import matplotlib.pyplot as plt\n"<<"import matplotlib.patches as mpatches\n";
+    ofs<<"xy_artists = [\n";    
+    for(int i=0; i<SPcell->uptake_voxels.size(); i++)
+    {
+      std::vector <double> voxel_position=microenvironment.voxels(i).center;
+      ofs<<"\t# "<<voxel_position<<"\n";
+      // if(std::abs(voxel_position[2]+60-pCell->position[2])<=voxel_length)
+      // {
+        std::vector <double> bottom_corner={voxel_position[0]-voxel_length/2,voxel_position[1]-voxel_length/2};      
+        ofs<<"\tmpatches.Rectangle(("<<bottom_corner[0]<<", "<<bottom_corner[1]<<"), "<<voxel_length<<","<< voxel_length << ", alpha=0.5, ec=\"red\", fc=\'green\'),\n";
+      // }
+    }
+    ofs<<"\tmpatches.Circle(("<<pCell->position[0]<<", "<<pCell->position[1]<<"), radius="<<pCell->phenotype.geometry.radius<<", ec=\"black\"),\n";
+    ofs<<"]\n";
+    ofs<<"fig,ax=plt.subplots()\n"<<"for i in xy_artists:\n"<<"\tax.add_patch(i)\n"<<"ax.autoscale_view()\n"<<"ax.set_aspect('equal', 'box')\n"<<"plt.show()";
+    ofs.close();
+  }
 }

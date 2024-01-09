@@ -89,4 +89,5 @@ void custom_add_potentials_for_pCells(Cell* pCell, double dt);
 void internal_concentration(Cell* pCell, std::string solute_name);
 void output_all_voxels_as_cartesian_index();
 void output_cell_and_voxels(std::vector <int> voxel_list, Cell* pCell);
+void python_plot_cell_and_voxels(Cell* pCell, double dt);
 #endif // __FOLLICLE_UTILITIES_H__

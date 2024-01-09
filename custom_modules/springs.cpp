@@ -256,8 +256,14 @@ void Spring_Cell::set_2p_initial_conditions()
   }
   else if(this->simulation_selected==4)
   {//EG & GLY
+    this->interior_molarity[0]=default_microenvironment_options.initial_condition_vector[0];
+    // set up permeability vector 
+    this->interior_molarity[1]=default_microenvironment_options.initial_condition_vector[1];
+    this->interior_molarity[2]=default_microenvironment_options.initial_condition_vector[2];
+    this->Ps[0]=0.0;//hm
+    this->solute_moles[0]=(this->interior_molarity[0])*(this->m_my_pCell->phenotype.volume.total-this->solid_volume);//HM osmolality/kdiss*kg/L solvent*density= femptomoles HM
     if(this->m_my_pCell->type==1)
-    { 
+    {
       this->Ps[1]=parameters.doubles("oocyte_Ps_EG");
       this->Lp=parameters.doubles("oocyte_Lp_EG_and_GLY");
       this->Ps[2]=parameters.doubles("oocyte_Ps_GLY");
@@ -268,13 +274,14 @@ void Spring_Cell::set_2p_initial_conditions()
       this->Lp=parameters.doubles("gran_Lp_EG_and_GLY");
       this->Ps[2]=parameters.doubles("gran_Ps_GLY");
     }
-    this->solute_moles[1]=0;
-    this->solute_moles[2]=0;
+    // this->solute_moles[0]=(this->interior_molarity[0])*(this->m_my_pCell->phenotype.volume.total-this->solid_volume);//HM osmolality/kdiss*kg/L solvent*density= femptomoles HM
+    // this->solute_moles[1]=0;
+    // this->solute_moles[2]=0;
       this->interior_component_molality[0]=molarity_to_molality(this->interior_molarity[0], "NaCl");
       this->interior_component_molality[1]=molarity_to_molality(this->interior_molarity[1], "EG");
       this->interior_component_molality[2]=molarity_to_molality(this->interior_molarity[2], "GLY");
       double vir=ternary_virial(this->interior_component_molality[1],this->interior_component_molality[2],"EG","GLY")+binary_virial(this->interior_component_molality[0], "NaCl"); 
-      // std::cout<<"Initial OSMOLALITY: "<< vir<<"\n";   
+      std::cout<<"Initial OSMOLALITY: "<< vir<<"\n";   
       this->interior_osmolality=ternary_virial(this->interior_component_molality[1],this->interior_component_molality[2],"EG","GLY")+binary_virial(this->interior_component_molality[0], "NaCl");
   }
   else if(this->simulation_selected==5)
@@ -460,9 +467,9 @@ void Spring_Cell::dN_molarity()
     {
       this->dN[i]=this->Ps[i]*(this->surface_area)*((this->exterior_molarity[i])-(this->interior_molarity[i]));
     }
-  // std::cout<<"Ps: "<< this->Ps<<"\n";
-  // std::cout<<"dN: "<<this->dN<<"\n";
-  // std::cout<<"exterior_molarity: "<<this->exterior_molarity[0]<<"\n";
+  // std::cout<<"Ps[0]: "<< this->Ps[0]<<"\n";
+  // std::cout<<"dN[0]: "<<this->dN[0]<<"\n";
+  // std::cout<<"exterior_molarity[0]: "<<this->exterior_molarity[0]<<"\n";
   // std::cout<<"interior_molarity: "<<this->interior_molarity[0]<<"\n";
    // std::cout<<"exterior_molarity 1: "<<this->exterior_molarity[1]<<"\n";
    // std::cout<<"interior_molarity 1: "<<this->interior_molarity[1]<<"\n";
@@ -497,6 +504,7 @@ void Spring_Cell::two_p_forward_step( double dt)
     }
   }
   this->water_uptake=this->next_water_volume-this->water_volume;
+  std::cout<<"water_uptake: "<< this->water_uptake<<"\n";
   this->water_volume=this->next_water_volume;//update for next step
   return;
 }
