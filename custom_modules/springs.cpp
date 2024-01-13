@@ -503,8 +503,8 @@ void Spring_Cell::two_p_forward_step( double dt)
 
     }
   }
-  this->water_uptake=this->next_water_volume-this->water_volume;
-  std::cout<<"water_uptake: "<< this->water_uptake<<"\n";
+  this->water_uptake=(this->next_water_volume-this->water_volume); //
+  // std::cout<<"water_uptake: "<< this->water_uptake<<"\n";
   this->water_volume=this->next_water_volume;//update for next step
   return;
 }

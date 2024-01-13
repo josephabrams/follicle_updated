@@ -950,7 +950,7 @@ void uptake_in_one_voxel(int voxel, double water_uptake_per_voxel, std::vector<d
   // ofs <<PhysiCell_globals.current_time<<", "<<microenvironment.voxels(voxel).mesh_index<<", "<<microenvironment.voxels(voxel).center[0]<<", "<<microenvironment.voxels(voxel).center[1]<<", "<<microenvironment.voxels(voxel).center[2]<<", "<<microenvironment.density_vector(voxel)[1]<<", ";
    
   std::vector <double> new_moles=moles_in_voxel-solute_uptake_per_voxel;
-  double effective_water_from_diffusion=10*voxel_volume+water_uptake_per_voxel; //water from each voxel face+ my own
+  double effective_water_from_diffusion=10*voxel_volume-water_uptake_per_voxel; //water from each voxel face+ my own
   double new_water_volume=voxel_volume;
   if (effective_water_from_diffusion<0)
   {
@@ -960,21 +960,21 @@ void uptake_in_one_voxel(int voxel, double water_uptake_per_voxel, std::vector<d
   debug_moles_output=new_moles;
   for(int i=0; i<new_moles.size(); i++)
   {
-    std::cout<<"WARNING!! 2P UPTAKE HAS OUTPACED DIFFUSION!\n";
     if(new_moles[i]<0) //cannot take moles that aren't there
     {
-      new_moles[i]=0;
+      std::cout<<"NEGATIVE MOLES! \n";
+      // new_moles[i]=0;
     }
   }
   if(new_water_volume<=0)
   {
-    std::cout<<"WARNING!! 2P WATER UPTAKE HAS OUTPACED DIFFUSION!\n";
-    new_water_volume=0.0000001;
+    std::cout<<"WATER UPTAKE WENT NEGATIVE!!\n";
+    // new_water_volume=0.0000001;
   }
   // ofs<< new_moles[1]<<", "<<moles_in_voxel[1]<<", "<<solute_uptake_per_voxel[1]<<", "<<new_water_volume<<", "<< voxel_volume<<", "<<water_uptake_per_voxel<<", "; 
   std::ofstream ofs;
   ofs.open("./output/uptake_in_one_voxel.csv", std::ofstream::out|std::ofstream::app);
-  ofs<<PhysiCell_globals.current_time<<", "<<voxel<<", "<< microenvironment.density_vector(voxel);
+  ofs<<PhysiCell_globals.current_time<<", "<<voxel<<", "<<moles_in_voxel<< microenvironment.density_vector(voxel);
   // std::cout<<"new water volume: "<< new_water_volume<<"\n";
   for(int i=0; i<solute_uptake_per_voxel.size();i++)
   {
@@ -986,7 +986,7 @@ void uptake_in_one_voxel(int voxel, double water_uptake_per_voxel, std::vector<d
     // std::cout<<"new: "<<microenvironment.density_vector(voxel)[i]<<"\n";
   }
   // ofs<<microenvironment.density_vector(voxel)[1]<<"\n ";
-  ofs<<microenvironment.density_vector(voxel)<<new_moles<<debug_moles_output<<new_water_volume <<solute_uptake_per_voxel<< "\n";
+  ofs<<microenvironment.density_vector(voxel)<<new_moles<<new_water_volume <<solute_uptake_per_voxel<< "\n";
   ofs.close();
 
   return;

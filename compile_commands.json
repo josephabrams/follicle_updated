@@ -6,6 +6,7 @@
       "-march=native",
       "-O3",
       "-fomit-frame-pointer",
+      "-mfpmath=both",
       "-fopenmp",
       "-m64",
       "-std=c++11",
@@ -42,8 +43,8 @@
       "ovarian_follicle",
       "main.cpp"
     ],
-    "directory": "/home/joe/Dev/follicle_updated/PhysiCell",
-    "file": "/home/joe/Dev/follicle_updated/PhysiCell/main.cpp",
-    "output": "/home/joe/Dev/follicle_updated/PhysiCell/ovarian_follicle"
+    "directory": "/home/joe-lab-linux/projects/ovarian_follicle_model/follicle_updated",
+    "file": "/home/joe-lab-linux/projects/ovarian_follicle_model/follicle_updated/main.cpp",
+    "output": "/home/joe-lab-linux/projects/ovarian_follicle_model/follicle_updated/ovarian_follicle"
   }
 ]

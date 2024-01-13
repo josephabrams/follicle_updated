@@ -1,0 +1,76 @@
+---
+title: "follicle_update_cell_code"
+output: html_document
+date: "2024-01-10"
+author: "Joseph E.S. Abrams
+---
+## Code for checking individual cell values  
+```{r}
+#load packages
+library(tidyverse)
+library(gganimate)
+```
+
+## Oocyte data import
+### Note -- big data can require clearing local memory
+
+```{r}
+oocyte_test <- read.csv("../output/2p_Test_oocyte.csv")
+
+```
+## Granulosa data import
+### Note -- big data can require clearing local memory
+```{r}
+granulosa_test <- read.csv("../output/2p_Test_granulosa.csv")
+
+```
+
+```{r}
+voxel_test <- read.csv("../output/uptake_in_one_voxel.csv")
+```
+
+```{r}
+eight_vox <- voxel_test %>% filter(voxel == 39052)
+View(eight_vox)
+```
+
+```{r}
+eight_granulosa <- granulosa_test %>% filter(pCell == 74)
+View(eight_granulosa)
+```
+
+```{r}
+granulosa_test <- as_tibble(granulosa_test)
+sample_granulosa <- granulosa_test %>% filter(pCell <= 1000, pCell>500) %>%
+  select(current_time, pCell, volume) %>% arrange(pCell)
+
+
+```
+
+```{r}
+granulosa_volume_plot <- ggplot(sample_granulosa, aes(x=current_time, y=volume, color=pCell ))+geom_line()
+
+print(granulosa_volume_plot)
+```
+```{r}
+granulosa_initial <- granulosa_test %>% filter(current_time == 0.0) %>% arrange(pCell)
+```
+
+
+```{r}
+granulosa_volume_plot_full <- ggplot(granulosa_test, aes(x=current_time, y=volume, color=pCell ))+geom_line()
+
+print(granulosa_volume_plot_full)
+```
+
+```{r}
+granulosa_volume_at_1sec<- ggplot(granulosa_initial, aes(x=exterior_osmolality, y=volume))+ggtitle("Volume vs Exterior Osmolality (oSmol) at 1 second")+geom_point()
+
+print(granulosa_volume_at_1sec)
+```
+
+```{r}
+ggplot(granulosa_test, aes(x=exterior_osmolality,y=volume))+
+  labs(title='Granulosa Volume vs Exterior Osmolality at Time: {frame_time}')+geom_point()+
+  transition_states(current_time)
+```
