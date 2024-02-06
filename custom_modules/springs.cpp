@@ -477,7 +477,7 @@ void Spring_Cell::dN_molarity()
 }
 void Spring_Cell::two_p_forward_step( double dt)
 {
-  if (PhysiCell_globals.current_time<=dt) {
+  if (PhysiCell_globals.current_time<dt) {
     this->next_water_volume=this->water_volume+(this->dVw*dt);//forward_euler
     for (size_t i = 0; i < (dN).size(); i++)
     {
@@ -485,7 +485,6 @@ void Spring_Cell::two_p_forward_step( double dt)
       // std::cout<<"current moles: "<< this->solute_moles[1]<<"\n";
       // std::cout<<"osmotic volume: "<< this->m_my_pCell->phenotype.volume.total-this->solid_volume<<"\n";
       // std::cout<<"interior concentration: "<< (this->solute_moles[0]+this->solute_moles[1])/(this->m_my_pCell->phenotype.volume.total-this->solid_volume)<<"\n";
-      // std::cout<<"sum of molarity:  "<<this->interior_molarity[0]+this->interior_molarity[1]<<"\n"; 
       // std::cout<<"interior osmolality: "<< this->interior_osmolality<<"\n"; 
       this->solute_uptake[i]=this->next_solute_moles[i]-this->solute_moles[i];//used to pass uptake to voxel environment
       this->solute_moles[i]=this->next_solute_moles[i];//update moles for next step

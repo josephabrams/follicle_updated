@@ -36,7 +36,7 @@ void get_interior_voxels(Cell *pCell, std::vector<int>* return_interior_voxel_in
 double concentration_at_boundary(Cell * pCell, int solute_index);
 
 void update_all_forces(Cell* pCell, double dt, double spring_constant);
-void uptake_in_one_voxel(int voxel, double water_uptake_per_voxel, std::vector<double> solute_uptake_per_voxel, std::vector<double> specific_volumes );
+void uptake_in_one_voxel(int voxel, double water_uptake_per_voxel, std::vector<double>* solute_uptake_per_voxel, std::vector<double> specific_volumes );
 double molarity_to_molality(double molarity, std::string component_name);
 // std::vector<std::vector<double> >get_voxel_corners (std::vector<double> voxel_center);
 void get_voxel_corners(std::vector<double> &voxel_center, std::vector<std::vector<double>> *return_corners );

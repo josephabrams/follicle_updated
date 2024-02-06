@@ -9,6 +9,10 @@ author: "Joseph E.S. Abrams
 #load packages
 library(tidyverse)
 library(gganimate)
+library(lazyeval)
+library(viridis)
+library(ggExtra)
+library(ggforce)
 ```
 
 ## Oocyte data import
@@ -28,6 +32,29 @@ granulosa_test <- read.csv("../output/2p_Test_granulosa.csv")
 ```{r}
 voxel_test <- read.csv("../output/uptake_in_one_voxel.csv")
 ```
+```{r}
+oocyte_voxels <- read.csv("../output/oocyte_voxels.csv")
+```
+```{r}
+oocyte_voxels <- as_tibble(oocyte_voxels)
+initial_voxels<- oocyte_voxels %>% filter(current_time==0,solute_index==1) %>% arrange(density)
+density_min<-min(initial_voxels$density)
+density_max<-max(initial_voxels$density)
+sum_max<-max(initial_voxels$sum)
+vox_avg<-sum_max/1728
+dist_min<-min(initial_voxels$distance_from_center)
+dist_max <- max(initial_voxels$distance_from_center)
+un_x <- unique(initial_voxels$x)
+un_x
+un_y <- unique(initial_voxels$y)
+un_y
+un_z <- unique(initial_voxels$z)
+un_z
+```
+```{r}
+uptake_test <- read.csv("../output/uptake_function.csv")
+vox_num <- unique(uptake_test$uptake_voxel_num)
+```
 
 ```{r}
 eight_vox <- voxel_test %>% filter(voxel == 39052)
@@ -41,8 +68,8 @@ View(eight_granulosa)
 
 ```{r}
 granulosa_test <- as_tibble(granulosa_test)
-sample_granulosa <- granulosa_test %>% filter(pCell <= 1000, pCell>500) %>%
-  select(current_time, pCell, volume) %>% arrange(pCell)
+sample_granulosa <- granulosa_test %>% filter(current_time<0.2) %>%
+  select(current_time, pCell, volume,exterior_osmolality,interior_osmolality,solute_uptake_1,dN_1) %>% arrange(pCell)
 
 
 ```
@@ -70,7 +97,76 @@ print(granulosa_volume_at_1sec)
 ```
 
 ```{r}
-ggplot(granulosa_test, aes(x=exterior_osmolality,y=volume))+
+ggplot(sample_granulosa, aes(x=exterior_osmolality,y=volume))+
   labs(title='Granulosa Volume vs Exterior Osmolality at Time: {frame_time}')+geom_point()+
   transition_states(current_time)
+```
+
+## Loading data to test diffusion
+
+```{r}
+oocyte_test <- read.csv("../output/2p_Test_oocyte.csv")
+
+```
+
+```{r}
+voxel_data <- read.csv("../output/voxel_values_1.csv")
+
+```
+
+
+```{r}
+
+voxel_data <- as_tibble(voxel_data)
+head_of_data<-head(voxel_data)
+range(voxel_data$z)
+z_values<-unique(voxel_data$z)
+unique(voxel_data$current_time)
+```
+```{r}
+for (i in 1:40){
+  slice_name <- paste("slice",i, sep="_")
+  x<- voxel_data %>% filter(z==z_values[i], current_time==0)
+  assign(slice_name,x)
+}
+```
+```{r}
+
+diffusion_map<-ggplot(slice_1,aes(x=x,y=y,fill=concentration_EG))+geom_tile()
+diffusion_map
+
+for(i in 1:40){
+  plot_name <- paste("plot_slice",i,"time","0.0",sep="_")
+  slice_name <- paste("slice",i, sep="_")
+  plot_title <- paste("Voxel layer located at",z_values[i])
+  diffusion_map<-ggplot(get(slice_name),aes(x=x,y=y,fill=concentration_EG))+geom_tile(color="black",size=0.1)+scale_fill_viridis(name="conc. CPA (Osm)", direction=-1,option="H")+labs(title=plot_title)
+  print(diffusion_map)
+}
+
+```
+
+
+
+```{r}
+
+center_slice<- voxel_data %>% filter(z==5,current_time==0)
+
+```
+```{r}
+circles <- data.frame(
+  x0 = c(0),
+  y0 = c(0),
+  r = c(50)
+)
+
+diffusion_map_circle<-ggplot(data=center_slice, aes(x=x,y=y,fill=concentration_EG))+geom_tile(color="black",size=0.1)+scale_fill_viridis(name="conc. CPA (Osm)", direction=-1,option="H")+labs(title="CPA concentration in center layer")
+diffusion_map_circle
+diffusion_map_circle+geom_circle(data=circles, aes(x0 = x0, y0 = y0, r = r,fill=r),inherit.aes = FALSE)+coord_fixed()
+diffusion_map_circle
+
+```
+```{r}
+
+diffusion_map<-ggplot(center_slice, aes(current_time,x=x,y=y,fill=concentration_EG))+geom_tile(color="black",size=0.1)+scale_fill_viridis(name="conc. CPA (Osm)", direction=-1,option="H")+labs(title="CPA concentration in center layer of voxels at {frame_time} seconds")+ transition_time(current_time)
+animate(diffusion_map, nframes = 1001, fps=10)
 ```
