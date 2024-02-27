@@ -215,6 +215,9 @@ for (j in 1:length(dt_0p01))
 }
 
 ```
+
+
+
 ```{r}
 dt_list <- c(0.01,0.02,0.05,0.1,0.2,0.5)
 log_dt <- seq(1,6)
@@ -245,4 +248,5 @@ colnames(piv_loglog) <- c_time_name
 ```{r}
 log_log_plot_0<-ggplot(piv_loglog,aes(x=t0,y=log_dt))+geom_line(color="red",show.legend = TRUE) + geom_line(aes(x=t1, y=log_dt), color="blue", show.legend = TRUE) + geom_line(aes(x=t2, y=log_dt), color="green", show.legend = TRUE)+ geom_line(aes(x=t3, y=log_dt),color="purple", show.legend = TRUE)+ geom_line(aes(x=t4, y=log_dt),color="orange", show.legend = TRUE)+geom_line(aes(x=t5,y=log_dt), color="brown",show.legend = TRUE)+labs(x='log(dt)',y='log(Err)', color="At Time:")+geom_line(aes(color=row.names(piv_loglog)))+scale_color_manual(labels=c("0 sec", "1 sec", "2 sec", "3 sec", "4 sec", "5 sec"), values=c("red","blue","green","purple","orange","brown","black"))
 log_log_plot_0
+ggsave("EG_diffsion_withCells.png")
 ```

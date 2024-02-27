@@ -491,16 +491,16 @@ double concentration_at_boundary(Cell* pCell, int solute_index)
       else {
         sum+=microenvironment.nearest_density_vector( SPcell->uptake_voxels[i])[solute_index];
       }
-      if(pCell->index==0){
-        std::ofstream ofs;
-        ofs.open ("./output/oocyte_voxels.csv", std::ofstream::out | std::ofstream::app);
-        double vox_x=microenvironment.voxels(SPcell->uptake_voxels[i]).center[0];
-        double vox_y=microenvironment.voxels(SPcell->uptake_voxels[i]).center[1];
-        double vox_z=microenvironment.voxels(SPcell->uptake_voxels[i]).center[2];
-        double distance_from_center=sqrt((vox_x*vox_x)+(vox_y*vox_y)+(vox_z*vox_z)); 
-        ofs<<PhysiCell_globals.current_time<<", "<<SPcell->uptake_voxels[i]<<", "<< solute_index<<", "<<microenvironment.nearest_density_vector(SPcell->uptake_voxels[i])[solute_index]<<", "<<sum<<", "<< distance_from_center<<", "<<vox_x<<", "<<vox_y<<", "<< vox_z<<"\n";
-        ofs.close();
-      }
+      // if(pCell->index==0){
+      //   std::ofstream ofs;
+      //   ofs.open ("./output/oocyte_voxels.csv", std::ofstream::out | std::ofstream::app);
+      //   double vox_x=microenvironment.voxels(SPcell->uptake_voxels[i]).center[0];
+      //   double vox_y=microenvironment.voxels(SPcell->uptake_voxels[i]).center[1];
+      //   double vox_z=microenvironment.voxels(SPcell->uptake_voxels[i]).center[2];
+      //   double distance_from_center=sqrt((vox_x*vox_x)+(vox_y*vox_y)+(vox_z*vox_z)); 
+      //   ofs<<PhysiCell_globals.current_time<<", "<<SPcell->uptake_voxels[i]<<", "<< solute_index<<", "<<microenvironment.nearest_density_vector(SPcell->uptake_voxels[i])[solute_index]<<", "<<sum<<", "<< distance_from_center<<", "<<vox_x<<", "<<vox_y<<", "<< vox_z<<"\n";
+      //   ofs.close();
+      // }
     }
     #pragma omp critical
     {
@@ -973,17 +973,17 @@ void output_voxel_uptakes(Spring_Cell* SPcell,std::vector<Voxel> output_voxels)
   {
 
     temp_voxel=output_voxels[i];
-    std::ofstream ofs;
-    ofs.open ("./output/an_uptake.csv", std::ofstream::out | std::ofstream::app);
+    // std::ofstream ofs;
+    // ofs.open ("./output/an_uptake.csv", std::ofstream::out | std::ofstream::app);
     std::vector<double> concentration=microenvironment.nearest_density_vector(temp_voxel.center);
 
-    ofs <<PhysiCell_globals.current_time<<", "<<temp_voxel.mesh_index<<", "<<temp_voxel.center[0]<<", "<<temp_voxel.center[1]<<", "<<temp_voxel.center[2]<<", ";
-    for(int j=0; j<concentration.size(); j++)
-    {
-      ofs <<concentration[j]<<", ";
-    }
-    ofs<<"\n";
-    ofs.close();
+    // ofs <<PhysiCell_globals.current_time<<", "<<temp_voxel.mesh_index<<", "<<temp_voxel.center[0]<<", "<<temp_voxel.center[1]<<", "<<temp_voxel.center[2]<<", ";
+    // for(int j=0; j<concentration.size(); j++)
+    // {
+      // ofs <<concentration[j]<<", ";
+    // }
+    // ofs<<"\n";
+    // ofs.close();
   }
     return;
 }

@@ -46,13 +46,14 @@ void output_voxel_values(double dt, int file_number)
 	ofs.open(filename, std::ofstream::out | std::ofstream::app);
   if(PhysiCell_globals.current_time<dt)
   {
-    ofs<<"current_time, voxel_id, x, y, z, concentration_salt, concentration_EG\n";
+    ofs<<"current_time, voxel_id, x, y, z, concentration_cpa \n";
   }
   for (size_t i = 0; i <microenvironment.number_of_voxels() ; i++) {
     Voxel tmp_voxel=microenvironment.voxels(i);
     double salt_concentration=microenvironment.density_vector(i)[0];
     double permeating_concentration=microenvironment.density_vector(i)[1];
-    ofs<<PhysiCell_globals.current_time<<", "<< tmp_voxel.mesh_index<<", "<< tmp_voxel.center << salt_concentration << ", " << permeating_concentration<<"\n";
+    // double permeating_concentration2=microenvironment.density_vector(i)[2];
+    ofs<<PhysiCell_globals.current_time<<", "<< tmp_voxel.mesh_index<<", "<< tmp_voxel.center << permeating_concentration<<"\n";// << ", " << permeating_concentration<<"\n";//<<", " <<permeating_concentration2<<"\n";
   }
   ofs.close();
   return;
@@ -266,53 +267,56 @@ void create_oocyte_cell_type(void)
 
 int counting_time=0;
 int count_outputs=0;
+
 void oocyte_cell_rule( Cell* pCell, Phenotype& phenotype, double dt )
 {
+
+  return;
+}
+void oocyte_phenotype_rule( Cell* pCell, Phenotype& phenotype, double dt )
+{
+  double db_count_num= std::round(1/dt);
+  int count_num=static_cast<int>(db_count_num);
   Spring_Cell* SPcell=spring_cell_by_pCell_index[pCell->index];
-  // if(PhysiCell_globals.current_time<dt){
-  //   SPcell->initial_number_of_connections=SPcell->m_springs.size();
-  // }
+  if(PhysiCell_globals.current_time<dt){
+    SPcell->initial_number_of_connections=SPcell->m_springs.size();
+  }
   // output_tzp_score(pCell, phenotype, dt);
   // int thread_id=omp_get_thread_num();
   //   // std::cout<<"VOLUME:"<<pCell->phenotype.volume.total<<"\n"; 
   // //std::vector <double> basement_membrane_center={0.0,0.0,0.0};
   //
   // int count=0;
-    std::ofstream ofs;
-    ofs.open ("./output/2p_Test_oocyte.csv", std::ofstream::out | std::ofstream::app);
-    if(PhysiCell_globals.current_time<dt) //add titles for test output
-    {
-      ofs << "current_time"<<", "<<"pCell"<<", "<< "volume"<<", ";
-      ofs <<"exterior_osmolality" <<", ";
-      ofs <<"interior_osmolality" <<", ";
-      for(int j=0; j<SPcell->exterior_molarity.size();j++){
-        ofs <<"exterior_molarity"<<"_"<<j<<", ";
-      }
-      for(int k=0; k<SPcell->interior_molarity.size();k++){
-        ofs <<"interior_molarity"<<"_"<<k<<", ";   
-      }
-
-      ofs<< "uptake_voxels_size"<<"\n";
-    }
+    // std::ofstream ofs;
+    // ofs.open ("./output/2p_Test_oocyte.csv", std::ofstream::out | std::ofstream::app);
+    // if(PhysiCell_globals.current_time<dt) //add titles for test output
+    // {
+    //   ofs << "current_time"<<", "<<"pCell"<<", "<< "volume"<<", ";
+    //   ofs <<"exterior_osmolality" <<", ";
+    //   ofs <<"interior_osmolality" <<", ";
+    //   for(int j=0; j<SPcell->exterior_molarity.size();j++){
+    //     ofs <<"exterior_molarity"<<"_"<<j<<", ";
+    //   }
+    //   for(int k=0; k<SPcell->interior_molarity.size();k++){
+    //     ofs <<"interior_molarity"<<"_"<<k<<", ";   
+    //   }
+    //
+    //   ofs<< "uptake_voxels_size"<<"\n";
+    // }
     // ofs << PhysiCell_globals.current_time<<", "<< pCell->index<<", "<< pCell->phenotype.volume.total<<", "<<SPcell->exterior_osmolality<<", "<<SPcell->interior_osmolality <<", "<<SPcell->exterior_molarity<<SPcell->interior_molarity<< SPcell->uptake_voxels.size()<<"\n";
-    ofs.close();
+    // ofs.close();
   int n=0;
-
-  return;
-}
-void oocyte_phenotype_rule( Cell* pCell, Phenotype& phenotype, double dt )
-{
-  spring_cell_functions(pCell,phenotype,dt);	
   // python_plot_cell_and_voxels(pCell, dt);
-    if(count_outputs%(1000)==0){
-      output_voxel_values(dt, 1);
-    }
+  if(count_outputs%(count_num)==0){
+    output_voxel_values(dt, 1);
+  }
   count_outputs++;
   // std::ofstream ofs;
 	// ofs.open ("./output/oocyte_output.csv", std::ofstream::out | std::ofstream::app);
   // ofs <<parameters.ints("selected_simulation")<<", "<< default_microenvironment_options.Dirichlet_condition_vector<<", "<<PhysiCell_globals.current_time<<", "<<pCell->type_name<<", "<< pCell->phenotype.volume.total<<", "<<pCell->position[0]<<", "<<pCell->position[1]<<", "<<pCell->position[2]<<", "<<SPcell->m_springs.size() <<", "<<k_oocyte<<", "<<k_granulosa<<", "<<k_basement<<"\n";
 	// ofs.close();
   // std::cout<<"VOLUME:"<<pCell->phenotype.volume.total<<"\n"; 
+  spring_cell_functions(pCell,phenotype,dt);	
   
 	return;
 
@@ -418,17 +422,16 @@ void granulosa_cell_rule( Cell* pCell, Phenotype& phenotype, double dt )
 
 void granulosa_phenotype_rule( Cell* pCell, Phenotype& phenotype, double dt )
 {
-  spring_cell_functions(pCell, phenotype, dt);
   Spring_Cell* SPcell=spring_cell_by_pCell_index[pCell->index];
   // int thread_id=omp_get_thread_num();
   // spring_cell_functions(pCell,phenotype,dt);	
   // if(PhysiCell_globals.current_time<100)
   // {
-    std::ofstream ofs;
-    ofs.open ("./output/2p_Test_granulosa.csv", std::ofstream::out | std::ofstream::app);
+    // std::ofstream ofs;
+    // ofs.open ("./output/2p_Test_granulosa.csv", std::ofstream::out | std::ofstream::app);
     // ofs << PhysiCell_globals.current_time<<", "<< pCell->index<<", "<< pCell->phenotype.volume.total<<", "<<SPcell->exterior_osmolality<<", "<<SPcell->interior_osmolality <<", "<<SPcell->exterior_molarity<<SPcell->interior_molarity<< SPcell->solute_uptake<< SPcell->water_volume<<", "<<SPcell->solute_volume<<", "<< SPcell->uptake_voxels.size()<<","<< SPcell->dN<<SPcell->dVw<< "\n";
-    // ofs << PhysiCell_globals.current_time<<", "<<pCell->index<<", "<<SPcell->m_my_pCell->index<<", "<< pCell<<", "<< pCell->phenotype.volume.total<<", "<<SPcell->exterior_osmolality<<", "<<SPcell->interior_osmolality <<", "<<SPcell->exterior_molarity<<SPcell->interior_molarity<<", "<< SPcell->uptake_voxels.size()<<"\n";
-    ofs.close();
+    // // ofs << PhysiCell_globals.current_time<<", "<<pCell->index<<", "<<SPcell->m_my_pCell->index<<", "<< pCell<<", "<< pCell->phenotype.volume.total<<", "<<SPcell->exterior_osmolality<<", "<<SPcell->interior_osmolality <<", "<<SPcell->exterior_molarity<<SPcell->interior_molarity<<", "<< SPcell->uptake_voxels.size()<<"\n";
+    // ofs.close();
   // }
   // counter++;
  //  // std::cout<<" FORCE PARAM: "<< k_oocyte<<", "<<k_granulosa<<", "<<k_basement<<"\n";
@@ -450,6 +453,7 @@ void granulosa_phenotype_rule( Cell* pCell, Phenotype& phenotype, double dt )
 	// ofs.open ("./output/granulosa_output.csv", std::ofstream::out | std::ofstream::app);
 	// ofs << parameters.ints("selected_simulation")<<", "<< default_microenvironment_options.Dirichlet_condition_vector<<", "<<PhysiCell_globals.current_time<<", "<<pCell->type_name<<", "<<pCell<<", "<< pCell->phenotype.volume.total<<", "<<pCell->position[0]<<", "<<pCell->position[1]<<", "<<pCell->position[2]<<SPcell->m_springs.size() <<", "<<k_oocyte<<", "<<k_granulosa<<", "<<k_basement<<", "<<SPcell->is_basement_connected<<"\n";
 	// ofs.close();
+  spring_cell_functions(pCell, phenotype, dt);
   return;
 }
 void granulosa_velocity_rule( Cell* pCell, Phenotype& phenotype, double dt )
@@ -745,7 +749,7 @@ void setup_microenvironment( void )
   activate_nodes(dirichlet_nodes_radius);//place the Dirichlet nodes at a radius around the follicle  
 	//total_uptake.resize(microenvironment.mesh.voxels.size());
 	//all_total_uptakes.resize(number_of_permeating_solutes,total_uptake);
-  setup_output_file(2);
+  // setup_output_file(2);
 	return;
 }
 void setup_secondary_stage_follicle(void)

@@ -68,7 +68,7 @@ View(eight_granulosa)
 
 ```{r}
 granulosa_test <- as_tibble(granulosa_test)
-sample_granulosa <- granulosa_test %>% filter(current_time<0.2) %>%
+sample_granulosa <- granulosa_test %>% filter(pCell==1) %>%
   select(current_time, pCell, volume,exterior_osmolality,interior_osmolality,solute_uptake_1,dN_1) %>% arrange(pCell)
 
 

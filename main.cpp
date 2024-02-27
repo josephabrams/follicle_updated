@@ -194,7 +194,7 @@ int main( int argc, char* argv[] )
 	}
 	
 	// main loop 
-	
+  // PhysiCell_settings.max_time=300;	
 	try 
 	{		
 		while( PhysiCell_globals.current_time < PhysiCell_settings.max_time + 0.1*diffusion_dt )
