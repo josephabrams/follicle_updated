@@ -132,6 +132,10 @@ void spring_cell_functions(Cell* pCell, Phenotype& phenotype, double dt)
 bool broke_BM=false;
 void output_tzp_score(Cell* pCell, Phenotype& phenotype, double dt)
 {
+
+  static int simulation_selected =parameters.ints( "selected_simulation" ); 
+  static int selected_PBS_simulation =parameters.ints("selected_PBS_simulation");
+  std::string filename="./output/TZP_score-"+std::to_string(simulation_selected)+"-"+std::to_string(selected_PBS_simulation)+".csv";
   // check that cell is the oocyte
   if(pCell->type==1){
     Spring_Cell* SPcell=spring_cell_by_pCell_index[pCell->index];
@@ -140,7 +144,7 @@ void output_tzp_score(Cell* pCell, Phenotype& phenotype, double dt)
     {tzp_score=-20.0;}
     if (PhysiCell_globals.current_time>(PhysiCell_settings.max_time-dt)) {
       std::ofstream ofs;
-      ofs.open ("./output/TZP_score.csv", std::ofstream::out | std::ofstream::app);
+      ofs.open (filename, std::ofstream::out | std::ofstream::app);
       ofs << parameters.ints("selected_simulation")<<", "<< default_microenvironment_options.Dirichlet_condition_vector<<PhysiCell_globals.current_time<<", "<<pCell->type<<", "<<tzp_score<<", "<< k_oocyte<<", "<<k_granulosa<<", "<< k_basement<<"\n";
       ofs.close();
     }     
@@ -281,7 +285,7 @@ void oocyte_phenotype_rule( Cell* pCell, Phenotype& phenotype, double dt )
   if(PhysiCell_globals.current_time<dt){
     SPcell->initial_number_of_connections=SPcell->m_springs.size();
   }
-  // output_tzp_score(pCell, phenotype, dt);
+  output_tzp_score(pCell, phenotype, dt);
   // int thread_id=omp_get_thread_num();
   //   // std::cout<<"VOLUME:"<<pCell->phenotype.volume.total<<"\n"; 
   // //std::vector <double> basement_membrane_center={0.0,0.0,0.0};
@@ -308,7 +312,7 @@ void oocyte_phenotype_rule( Cell* pCell, Phenotype& phenotype, double dt )
   int n=0;
   // python_plot_cell_and_voxels(pCell, dt);
   if(count_outputs%(count_num)==0){
-    output_voxel_values(dt, 1);
+    // output_voxel_values(dt, 1);
   }
   count_outputs++;
   // std::ofstream ofs;

@@ -49,7 +49,7 @@ PhysiCell_pugixml.o PhysiCell_settings.o PhysiCell_geometry.o
 
 # put your custom objects here (they should be in the custom_modules directory)
 
-PhysiCell_custom_module_OBJECTS := follicle_utilities.o ovarian_follicle.o springs.o
+PhysiCell_custom_module_OBJECTS := follicle_utilities.o ovarian_follicle.o springs.o connectors.o
 
 pugixml_OBJECTS := pugixml.o
 
@@ -341,6 +341,11 @@ follicle_utilities.o: ./custom_modules/follicle_utilities.cpp
 
 springs.o: ./custom_modules/springs.cpp
 	$(COMPILE_COMMAND) -c ./custom_modules/springs.cpp
+
+connectors.o: ./custom_modules/connectors.cpp
+	$(COMPILE_COMMAND) -c ./custom_modules/connectors.cpp
+# twoP.o: ./custom_modules/twoP.cpp
+# 	$(COMPILE_COMMAND) -c ./custom_modules/twoP.cpp
 # cleanup
 
 reset-reset-reset:
